@@ -1,0 +1,14 @@
+{
+  "public": {
+    "miner_access_points": [
+      "http://localhost:7071/",
+      "http://localhost:7072/",
+      "http://localhost:7073/"
+    ],
+    "sharder_access_points": [
+      "http://localhost:7171/"
+    ],
+    "transaction_timeout": 15,
+    "cluster_name": "local"
+  }
+}
