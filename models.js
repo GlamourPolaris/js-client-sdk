@@ -109,6 +109,7 @@ module.exports = {
         this.signature = data.signature;
         this.creation_date = data.creation_date;
         this.transaction_type = data.transaction_type;
+        this.transaction_output = data.transaction_output;
         this.txn_output_hash = (typeof data.txn_output_hash != 'undefined') ? data.txn_output_hash : null;
     },
 

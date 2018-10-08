@@ -143,6 +143,12 @@ module.exports = {
         makeRegReqToAllMiners(callback, errCallback, key, id, sKey);
 
     },
+
+    registerClientWithExistingInfo: function registerClientWithExistingInfo(account, callback, errCallback) {
+        console.log("account", account);
+        makeRegReqToAllMiners(callback, errCallback, account.public_key, account.id, account.secretKey);
+    },
+
     storeData: function storeData(ae, payload, callback, errCallback) {
         const toClientId = "";
         submitTransaction(ae, toClientId, 0, payload, TransactionType.DATA, callback, errCallback);
@@ -152,11 +158,90 @@ module.exports = {
         submitTransaction(ae, toClientId, val, note, TransactionType.SEND, callback, errCallback);
     },
 
-    // merkle_tree_path: models.merkle_tree_path,
+    //Smart contract address need to pass in toClientId
+    executeSmartContract: function executeSmartContract(ae, to_client_id , payload, callback, errCallback) {
+        const toClientId =  typeof to_client_id == "undefined" ? "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7" : to_client_id;
+        const val = 0;
+        submitTransaction(ae, toClientId, val, payload, TransactionType.SMART_CONTRACT, callback, errCallback);
+    },
+
+    // Only for testing it will remove after blobber code has self registration
+    addBlobber: function addBlobber(ae, id, url, callback, errCallback){
+        var payload = {
+            name : "add_blobber",
+            input : {
+                id : id,
+                url : url
+            }
+        }
+        this.executeSmartContract(ae, undefined, JSON.stringify(payload), callback, errCallback);
+    },
+
+    allocateStorage: function allocateStorage(ae, num_reads, num_writes, data_shards, parity_shards, size, expiration_date, callback, errCallback) {
+        var payload = {
+            name : "new_allocation_request",
+            input: {
+                num_reads: num_reads,
+                num_writes: num_writes,
+                data_shards: data_shards,
+                parity_shards: parity_shards,
+                size: size,
+                expiration_date: expiration_date
+            }
+        }
+        this.executeSmartContract(ae, undefined, JSON.stringify(payload), callback, errCallback);
+    },
+
+    //This function name may get rename after finalize on the storage protocol name change
+    makeWriteIntentTransaction : function makeWriteIntentTransaction(ae, allocation_id, blobber_id, callback, errCallback) {
+        var payload = {
+            name : "open_connection",
+            input : {
+                client_id : ae.id,
+                blobber_id : blobber_id,
+                max_size : 10,
+                allocation_id : allocation_id
+            }
+        }
+        this.executeSmartContract(ae, undefined, JSON.stringify(payload), callback, errCallback);
+    }, 
+
+    //Only for testing it will remove after blobber code has this feature
+    //This has to call from blobber
+    makeCommitIntentTransaction: function makeCommitIntentTransaction(ae, allocation_id, client_id, transaction_id, callback, errCallback) {
+        var payload = {
+            name : "close_connection",
+            input : {
+                client_id : client_id,
+                blobber_id : ae.id,
+                max_size : 10,
+                allocation_id : allocation_id,
+                transaction_id : transaction_id
+            }
+        }
+        this.executeSmartContract(ae, undefined, JSON.stringify(payload), callback, errCallback);
+    },
+
+    makeReadIntentTransaction : function makeReadIntentTransaction() {
+
+    },  
+    
+    Wallet: models.Wallet,
+    ChainStats: models.ChainStats,
+    BlockSummary: models.BlockSummary,
+    Block: models.Block,
+    Transaction: models.Transaction,
+    TransactionDetail: models.TransactionDetail,
+    Confirmation: models.Confirmation,
+    merkle_tree_path: models.merkle_tree_path,
+    VerificationTicket: models.VerificationTicket,
 
     TransactionType: TransactionType = {
         SEND: 0, // A transaction to send tokens to another account, state is maintained by account
-        DATA: 10 // A transaction to just store a piece of data on the block chain
+        DATA: 10, // A transaction to just store a piece of data on the block chain
+        // STORAGE_WRITE : 101, // A transaction to write data to the blobber
+        // STORAGE_READ  : 103,// A transaction to read data from the blobber
+        SMART_CONTRACT : 1000 // A smart contract transaction type
     }
 
 }
@@ -288,5 +373,6 @@ function submitTransaction(ae, toClientId, val, note, transaction_type, callback
     data.signature = utils.byteToHexString(signedData);
 
     const jsonString = JSON.stringify(data);
+    console.log("json",jsonString);
     makeTransReqToAllMiners(jsonString, callback, errCallback);
 }
