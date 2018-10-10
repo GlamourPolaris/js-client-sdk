@@ -90,15 +90,16 @@ module.exports = {
                         reject(xhr.status + "--" + xhr.responseText);
                     }
                 } else if (xhr.status != 200) {
-                    // console.log("Interium states = " + xhr.readyState + " status = " + xhr.status )
+                     console.log("Interium states = " + xhr.readyState + " status = " + xhr.status )
                 } else {
-                    // console.log("Interium states = " + xhr.readyState + " status = " + xhr.status )
+                     console.log("Interium states = " + xhr.readyState + " status = " + xhr.status )
                 }
             }
             xhr.ontimeout = function () {
                 reject('timeout');
             }
             xhr.open("POST", url, true);
+            xhr.setRequestHeader('X-PINGOTHER', 'pingpong');
             xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
             xhr.setRequestHeader('Access-Control-Allow-Origin', '*');
             xhr.timeout = 3000;
