@@ -99,7 +99,7 @@ module.exports = {
                 reject('timeout');
             }
             xhr.open("POST", url, true);
-            xhr.setRequestHeader('X-PINGOTHER', 'pingpong');
+            //xhr.setRequestHeader('X-PINGOTHER', 'pingpong');
             xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
             //xhr.setRequestHeader('Access-Control-Allow-Origin', '*');
             xhr.timeout = 3000;
