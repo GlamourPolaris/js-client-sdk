@@ -98,9 +98,9 @@ function registerBlobbers() {
     
     
     addBlobber(blobber1,"afc24d0e0e7a8afaaabc08bc49f5e415ab890ea1190d8281adf496e2960cd702","http://localhost:5051");
-    addBlobber(blobber2,"afc24d0e0e7a8afaaabc08bc49f5e415ab890ea1190d8281adf496e2960cd702","http://localhost:5052");
-    addBlobber(blobber3,"afc24d0e0e7a8afaaabc08bc49f5e415ab890ea1190d8281adf496e2960cd702","http://localhost:5053");
-    addBlobber(blobber4,"afc24d0e0e7a8afaaabc08bc49f5e415ab890ea1190d8281adf496e2960cd702","http://localhost:5054");
+    addBlobber(blobber2,"c2696364464a0a211410da2d6eb42915befe182ae2014d6ba37d6264de5fe5c1","http://localhost:5052");
+    addBlobber(blobber3,"96e08ef36f14d91263d44bf220f589796170f7465de1973362df8538a0ffebcb","http://localhost:5053");
+    addBlobber(blobber4,"7f1c7fae2809a91f1ccb5d2271773c42067cbd55b934519eb357ec9c58aa50b6","http://localhost:5054");
   
 }
 
@@ -192,6 +192,8 @@ function getBalance(client_id) {
 
 //register()
 
+var activeClient;
+
 /*
  * Before placing any transactions or storing data, a client must be registered. 
  * Registering a client is equivalent to creating a wallet on some blockchains. 
@@ -210,6 +212,8 @@ function registerClientSuccessCallback(account) {
     * Once a client is registered, it can be used for storing data or sending transactions
     */
 
+   activeClient = account;
+
     console.log("register", account);
 
     setTimeout(
@@ -225,9 +229,39 @@ function registerClientErrCallback(err) {
 }
 
 function allocateStorage(ae) {
-    sdk.allocateStorage(ae, 10000, 10000, 10, 2, 1000, 1638188575, verifyTransaction, function(err){
+   
+    sdk.allocateStorage(ae, 10000, 10000, 10, 2, 1000, 1638188575, verifyAllocationTransaction, function(err){
         console.log(err);
     });
+}
+
+function verifyAllocationTransaction(transaction) {
+    setTimeout(
+        function () {
+            //The has provided as part of transaction object is most important piece of information.
+            console.log("\nSending verifyTransaction for hash: " + transaction.hash)
+            sdk.checkTransactionStatus(transaction.hash, function (data) {
+                console.log("transaction detail", data);
+                if(data.transaction.transaction_output != null) {
+                    var allocation =  JSON.parse(data.transaction.transaction_output);// data.transaction_output
+                    console.log("my allocation",allocation);
+
+                    var blobbers = [];
+                    for (key in allocation.blobbers) {
+                        console.log("data-blobber",data);
+                        blobbers.push(allocation.blobbers[key]);
+                    }
+
+                    console.log(blobbers);
+
+                    if(blobbers.length > 0) {
+                        sendWriteIntentTransaction(activeClient, allocation.id, blobbers[0].id, "/", 1, 1024);
+                    }
+
+
+                }
+            }, verifyTransactionErrCallback)
+        }, 5000) //giving 5 seconds for the transaction to go through
 }
 
 function storeData(account) {
@@ -288,5 +322,15 @@ function verifyTransactionByHash(hash) {
     sdk.checkTransactionStatus(hash, getTransactionDetails, verifyTransactionErrCallback)
 
 }
+
+function sendWriteIntentTransaction(ae, allocation_id, blobber_id, path, partNumber, size) {
+    sdk.makeWriteIntentTransaction(ae, allocation_id, blobber_id, path, partNumber, size, function(data){
+        console.log(data);
+    }, function(err){
+        console.error("Data", err);
+    });
+}
+
+
 
 

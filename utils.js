@@ -17,6 +17,8 @@
 
 "use strict";
 
+var sha3 = require('js-sha3');
+
 module.exports = {
     byteToHexString: function byteToHexString(uint8arr) {
         if (!uint8arr) {
@@ -69,6 +71,10 @@ module.exports = {
         return new Promise(resolve => setTimeout(resolve, ms));
     },
 
+    computeStoragePartDataId: function(allocationId, path, partNum) {
+        return sha3.sha3_256(allocationId+":"+path+":"+partNum);
+    },
+
 
     /*
        A utility function to make a post request.
@@ -99,9 +105,7 @@ module.exports = {
                 reject('timeout');
             }
             xhr.open("POST", url, true);
-            //xhr.setRequestHeader('X-PINGOTHER', 'pingpong');
             xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
-            //xhr.setRequestHeader('Access-Control-Allow-Origin', '*');
             xhr.timeout = 3000;
             xhr.send(jsonPostString);
         });

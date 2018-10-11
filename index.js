@@ -193,14 +193,19 @@ module.exports = {
     },
 
     //This function name may get rename after finalize on the storage protocol name change
-    makeWriteIntentTransaction : function makeWriteIntentTransaction(ae, allocation_id, blobber_id, callback, errCallback) {
+    makeWriteIntentTransaction : function makeWriteIntentTransaction(ae, allocation_id, blobber_id, path, partNumber, size, callback, errCallback) {
+        
+        const data_id = utils.computeStoragePartDataId(allocation_id, path, partNumber);
+
         var payload = {
             name : "open_connection",
             input : {
                 client_id : ae.id,
                 blobber_id : blobber_id,
                 max_size : 10,
-                allocation_id : allocation_id
+                allocation_id : allocation_id,
+                data_id: data_id,
+                size: size
             }
         }
         this.executeSmartContract(ae, undefined, JSON.stringify(payload), callback, errCallback);
