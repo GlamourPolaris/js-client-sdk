@@ -27,6 +27,8 @@ var models = require('./models');
 
 var miners, sharders, clusterName, version;
 
+const data_shards = 10;
+const parity_shards = 6;
 
 
 const Endpoints = {
@@ -193,19 +195,37 @@ module.exports = {
     },
 
     //This function name may get rename after finalize on the storage protocol name change
-    makeWriteIntentTransaction : function makeWriteIntentTransaction(ae, allocation_id, blobber_id, path, partNumber, size, callback, errCallback) {
-        
-        const data_id = utils.computeStoragePartDataId(allocation_id, path, partNumber);
+    // file is FIle interface provided by browser : May change
+    makeWriteIntentTransaction : function makeWriteIntentTransaction(ae, allocation_id, blobber_list, path, file, callback, errCallback) {
+         //compute data each part
+         //TO DO : currently logic doesnt handle if file is not divisible by 16 count
+         const fileSize = file.size;
+         const totalParts = data_shards + parity_shards;
+         const partSize = fileSize / totalParts;
+         const totalBlobbers = blobber_list.length;
+
+         console.log("blobber_list",blobber_list);
+
+         var blobberData = [];
+         var data;
+         for(var i=0;i<totalParts;i++) {
+            data = {};
+            data.blobber_id = blobber_list[i % totalBlobbers]; // assigning the blobber in round robin 
+            data.data_id = utils.computeStoragePartDataId(allocation_id, path, i); // i is the partNumber
+            data.size = partSize;
+            data.merkle_root = null; // TODO : We may able to calculate this 
+            blobberData.push(data);
+         }
+
+         console.log("blobberData", blobberData);
 
         var payload = {
             name : "open_connection",
             input : {
                 client_id : ae.id,
-                blobber_id : blobber_id,
                 max_size : 10,
                 allocation_id : allocation_id,
-                data_id: data_id,
-                size: size
+                blobber_data : blobberData
             }
         }
         this.executeSmartContract(ae, undefined, JSON.stringify(payload), callback, errCallback);

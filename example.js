@@ -255,7 +255,7 @@ function verifyAllocationTransaction(transaction) {
                     console.log(blobbers);
 
                     if(blobbers.length > 0) {
-                        sendWriteIntentTransaction(activeClient, allocation.id, blobbers[0].id, "/", 1, 1024);
+                        sendWriteIntentTransaction(activeClient, allocation.id, blobbers, "/", {size:1024});
                     }
 
 
@@ -323,12 +323,20 @@ function verifyTransactionByHash(hash) {
 
 }
 
-function sendWriteIntentTransaction(ae, allocation_id, blobber_id, path, partNumber, size) {
-    sdk.makeWriteIntentTransaction(ae, allocation_id, blobber_id, path, partNumber, size, function(data){
-        console.log(data);
-    }, function(err){
-        console.error("Data", err);
-    });
+function sendWriteIntentTransaction(ae, allocation_id, blobbers, path, size) {
+
+    setTimeout(
+        function () {
+
+            sdk.makeWriteIntentTransaction(ae, allocation_id, blobbers, path, size, function(data){
+                console.log(data);
+            }, function(err){
+                console.error("Data", err);
+            });            
+
+        }, 5000);
+
+
 }
 
 

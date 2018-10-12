@@ -96,9 +96,9 @@ module.exports = {
                         reject(xhr.status + "--" + xhr.responseText);
                     }
                 } else if (xhr.status != 200) {
-                     console.log("Interium states = " + xhr.readyState + " status = " + xhr.status )
+                     //console.log("Interium states = " + xhr.readyState + " status = " + xhr.status )
                 } else {
-                     console.log("Interium states = " + xhr.readyState + " status = " + xhr.status )
+                     //console.log("Interium states = " + xhr.readyState + " status = " + xhr.status )
                 }
             }
             xhr.ontimeout = function () {
