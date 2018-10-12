@@ -29,6 +29,11 @@ var miners, sharders, clusterName, version;
 
 const data_shards = 10;
 const parity_shards = 6;
+const chunk_size = 640;
+// shardSize is 64 kb
+const shard_size = 64 * 1024
+
+
 
 
 const Endpoints = {
@@ -199,12 +204,20 @@ module.exports = {
     makeWriteIntentTransaction : function makeWriteIntentTransaction(ae, allocation_id, blobber_list, path, file, callback, errCallback) {
          //compute data each part
          //TO DO : currently logic doesnt handle if file is not divisible by 16 count
-         const fileSize = file.size;
+
+         //FileSize Calculation
+         //as we a do erasure code as 640 bytes we may need to pad 0's if not fully divisible by 640
+         var fileSize = file.size;
+         var remainingBytes = file.size % chunk_size;
+         if(remainingBytes != 0) {
+            fileSize += (chunk_size - remainingBytes);
+         }
+         // add parity size to the file size
+         fileSize += parity_shards * shard_size;
+
          const totalParts = data_shards + parity_shards;
          const partSize = Math.round(fileSize / totalParts);
          const totalBlobbers = blobber_list.length;
-
-         console.log("blobber_list",blobber_list);
 
          var blobberData = [];
          var data;
