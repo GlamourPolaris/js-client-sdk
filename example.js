@@ -255,13 +255,13 @@ function verifyAllocationTransaction(transaction) {
                     console.log(blobbers);
 
                     if(blobbers.length > 0) {
-                        sendWriteIntentTransaction(activeClient, allocation.id, blobbers, "/", {size:1024});
+                        sendWriteIntentTransaction(activeClient, allocation.id, blobbers, "/", {size:614023});
                     }
 
 
                 }
             }, verifyTransactionErrCallback)
-        }, 5000) //giving 5 seconds for the transaction to go through
+        }, 8000) //giving 8 seconds for the transaction to go through
 }
 
 function storeData(account) {

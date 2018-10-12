@@ -201,7 +201,7 @@ module.exports = {
          //TO DO : currently logic doesnt handle if file is not divisible by 16 count
          const fileSize = file.size;
          const totalParts = data_shards + parity_shards;
-         const partSize = fileSize / totalParts;
+         const partSize = Math.round(fileSize / totalParts);
          const totalBlobbers = blobber_list.length;
 
          console.log("blobber_list",blobber_list);
@@ -212,7 +212,7 @@ module.exports = {
             data = {};
             data.blobber_id = blobber_list[i % totalBlobbers]; // assigning the blobber in round robin 
             data.data_id = utils.computeStoragePartDataId(allocation_id, path, i); // i is the partNumber
-            data.size = partSize;
+            data.size =  partSize;
             data.merkle_root = null; // TODO : We may able to calculate this 
             blobberData.push(data);
          }
