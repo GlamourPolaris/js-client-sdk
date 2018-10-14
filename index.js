@@ -46,7 +46,10 @@ const Endpoints = {
     GET_CHAIN_STATS: "v1/chain/get/stats",
     GET_BLOCK_INFO: "v1/block/get?content=",
     CHECK_TRANSACTION_STATUS: "v1/transaction/get/confirmation?hash=",
-    GET_BALANCE: "v1/client/get/balance?client_id="
+    GET_BALANCE: "/v1/client/get/balance?client_id=",
+
+    //BLOBBER
+    ALLOCATION_FILE_LIST : "/v1/file/list/"
 }
 
 
@@ -263,6 +266,38 @@ module.exports = {
     makeReadIntentTransaction : function makeReadIntentTransaction() {
 
     },  
+
+    //Blobber Methods
+
+    getAllFileNamesForAllocation: async function getAllFileNamesForAllocation(allocation_id, blobber_list, path, callback, errCallback) {
+        
+        var blobber_url, resp, data;
+        var files = [];
+        for (let blobber of blobber_list) {
+            try {
+                blobber_url = blobber + Endpoints.ALLOCATION_FILE_LIST + allocation_id +"?path="+path;
+                resp = await utils.getReq(blobber_url);
+                data = JSONbig.parse(resp);
+
+                if(data.entries != null && data.entries.length > 0) {
+                    
+                    for (let file_data of data.entries) {
+                        /* files not contains the element we're looking for so add */
+                        if (!files.some(e => e.LookupHash === file_data.LookupHash)) {
+                            files.push(file_data);
+                        } 
+                    }
+                }
+            }
+            catch (error) {
+                errCallback(error);
+            }
+        } 
+        callback(files);
+
+    },
+
+    // End Blobber method
     
     Wallet: models.Wallet,
     ChainStats: models.ChainStats,

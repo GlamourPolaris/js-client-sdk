@@ -49,12 +49,21 @@ var client1 = new sdk.Wallet({
     secretKey: "5a9efbaebb55b3005e189e0ee981b53d8a971884b0860d6f181037b7ba649fff6f68647e75e7726d3a842a1ae72af66acd5f3a6f70b4c9b0c9fac0625a73bc72"
 });
 
+const blobbers = [];
+
+blobbers.push('http://localhost:5051');
+blobbers.push('http://localhost:5052');
+blobbers.push('http://localhost:5053');
+blobbers.push('http://localhost:5054');
+blobbers.push('http://localhost:5055');
+blobbers.push('http://localhost:5056');
 
 
-//registerBlobbers();
-register();
 
+registerBlobbers();
+//register();
 
+//getAllFileNamesForAllocation("36f028580bb02cc8272a9a020f4200e346e276ae664e45ee80745574e2f5ab80", blobbers, "/");
 
 
 function registerBlobbers() {
@@ -337,6 +346,14 @@ function sendWriteIntentTransaction(ae, allocation_id, blobbers, path, size) {
         }, 5000);
 
 
+}
+
+function getAllFileNamesForAllocation(allocation_id, blobber_list, path) {
+    sdk.getAllFileNamesForAllocation(allocation_id, blobber_list, path, function(data) {
+        console.log("Data", data);
+    }, function(err){
+        console.error(err);
+    });
 }
 
 
