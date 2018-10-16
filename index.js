@@ -209,17 +209,18 @@ module.exports = {
          //TO DO : currently logic doesnt handle if file is not divisible by 16 count
 
          //FileSize Calculation
-         //as we a do erasure code as 640 bytes we may need to pad 0's if not fully divisible by 640
          var fileSize = file.size;
-         var remainingBytes = file.size % chunk_size;
-         if(remainingBytes != 0) {
-            fileSize += (chunk_size - remainingBytes);
-         }
+        var partSize = Math.ceil(fileSize / 10);
+
+        while(partSize % 8 != 0) {
+            partSize ++;
+        }
+
          // add parity size to the file size
          fileSize += parity_shards * shard_size;
 
          const totalParts = data_shards + parity_shards;
-         const partSize = Math.round(fileSize / totalParts);
+         //const partSize = Math.round(fileSize / totalParts);
          const totalBlobbers = blobber_list.length;
 
          var blobberData = [];
