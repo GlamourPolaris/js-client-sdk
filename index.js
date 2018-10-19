@@ -210,7 +210,7 @@ module.exports = {
 
          //FileSize Calculation
          var fileSize = file.size;
-        var partSize = Math.ceil(fileSize / 10);
+        var partSize = Math.ceil(fileSize / data_shards);
 
         while(partSize % 8 != 0) {
             partSize ++;
@@ -240,7 +240,6 @@ module.exports = {
             name : "open_connection",
             input : {
                 client_id : ae.id,
-                max_size : 10,
                 allocation_id : allocation_id,
                 blobber_data : blobberData
             }
@@ -256,7 +255,6 @@ module.exports = {
             input : {
                 client_id : client_id,
                 blobber_id : ae.id,
-                max_size : 10,
                 allocation_id : allocation_id,
                 transaction_id : transaction_id
             }
