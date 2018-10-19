@@ -71,8 +71,8 @@ module.exports = {
         return new Promise(resolve => setTimeout(resolve, ms));
     },
 
-    computeStoragePartDataId: function(allocationId, path, partNum) {
-        return sha3.sha3_256(allocationId+":"+path+":"+partNum);
+    computeStoragePartDataId: function (allocationId, path, fileName, partNum) {
+        return sha3.sha3_256(allocationId + ":" + path + ":" + fileName + ":" + partNum);
     },
 
 
@@ -96,9 +96,9 @@ module.exports = {
                         reject(xhr.status + "--" + xhr.responseText);
                     }
                 } else if (xhr.status != 200) {
-                     //console.log("Interium states = " + xhr.readyState + " status = " + xhr.status )
+                    //console.log("Interium states = " + xhr.readyState + " status = " + xhr.status )
                 } else {
-                     //console.log("Interium states = " + xhr.readyState + " status = " + xhr.status )
+                    //console.log("Interium states = " + xhr.readyState + " status = " + xhr.status )
                 }
             }
             xhr.ontimeout = function () {
