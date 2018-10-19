@@ -27,9 +27,9 @@ var models = require('./models');
 
 var miners, sharders, clusterName, version;
 
-const data_shards = 10;
-const parity_shards = 6;
-const chunk_size = 640;
+// const data_shards = 10;
+// const parity_shards = 6;
+// const chunk_size = 640;
 // shardSize is 64 kb
 const shard_size = 64 * 1024
 
@@ -49,7 +49,7 @@ const Endpoints = {
     GET_BALANCE: "/v1/client/get/balance?client_id=",
 
     //BLOBBER
-    ALLOCATION_FILE_LIST: "/v1/file/list/"
+    ALLOCATION_FILE_LIST : "/v1/file/list/"
 }
 
 
@@ -169,19 +169,19 @@ module.exports = {
     },
 
     //Smart contract address need to pass in toClientId
-    executeSmartContract: function executeSmartContract(ae, to_client_id, payload, callback, errCallback) {
-        const toClientId = typeof to_client_id == "undefined" ? "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7" : to_client_id;
+    executeSmartContract: function executeSmartContract(ae, to_client_id , payload, callback, errCallback) {
+        const toClientId =  typeof to_client_id == "undefined" ? "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7" : to_client_id;
         const val = 0;
         submitTransaction(ae, toClientId, val, payload, TransactionType.SMART_CONTRACT, callback, errCallback);
     },
 
     // Only for testing it will remove after blobber code has self registration
-    addBlobber: function addBlobber(ae, id, url, callback, errCallback) {
+    addBlobber: function addBlobber(ae, id, url, callback, errCallback){
         var payload = {
-            name: "add_blobber",
-            input: {
-                id: id,
-                url: url
+            name : "add_blobber",
+            input : {
+                id : id,
+                url : url
             }
         }
         this.executeSmartContract(ae, undefined, JSON.stringify(payload), callback, errCallback);
@@ -189,7 +189,7 @@ module.exports = {
 
     allocateStorage: function allocateStorage(ae, num_reads, num_writes, data_shards, parity_shards, size, expiration_date, callback, errCallback) {
         var payload = {
-            name: "new_allocation_request",
+            name : "new_allocation_request",
             input: {
                 num_reads: num_reads,
                 num_writes: num_writes,
@@ -204,102 +204,102 @@ module.exports = {
 
     //This function name may get rename after finalize on the storage protocol name change
     // file is FIle interface provided by browser : May change
-    makeWriteIntentTransaction: function makeWriteIntentTransaction(ae, allocation_id, blobber_list, path, file, callback, errCallback) {
-        //compute data each part
-        //TO DO : currently logic doesnt handle if file is not divisible by 16 count
+    makeWriteIntentTransaction : function makeWriteIntentTransaction(ae, allocation_id, blobber_list, path, file, data_shards, parity_shards, callback, errCallback) {
+         //compute data each part
+         //TO DO : currently logic doesnt handle if file is not divisible by 16 count
 
-        //FileSize Calculation
-        var fileSize = file.size;
+         //FileSize Calculation
+         var fileSize = file.size;
         var partSize = Math.ceil(fileSize / 10);
 
-        while (partSize % 8 != 0) {
-            partSize++;
+        while(partSize % 8 != 0) {
+            partSize ++;
         }
 
-        // add parity size to the file size
-        fileSize += parity_shards * shard_size;
+         // add parity size to the file size
+         fileSize += parity_shards * shard_size;
 
-        const totalParts = data_shards + parity_shards;
-        //const partSize = Math.round(fileSize / totalParts);
-        const totalBlobbers = blobber_list.length;
+         const totalParts = data_shards + parity_shards;
+         //const partSize = Math.round(fileSize / totalParts);
+         const totalBlobbers = blobber_list.length;
 
-        var blobberData = [];
-        var data;
-        for (var i = 0; i < totalParts; i++) {
+         var blobberData = [];
+         var data;
+         for(var i=0;i<totalParts;i++) {
             data = {};
             data.blobber_id = blobber_list[i % totalBlobbers]; // assigning the blobber in round robin 
-            data.data_id = utils.computeStoragePartDataId(allocation_id, path, file.name, i); // i is the partNumber
-            data.size = partSize;
+            data.data_id = utils.computeStoragePartDataId(allocation_id, path,file.name, i); // i is the partNumber
+            data.size =  partSize;
             data.merkle_root = null; // TODO : We may able to calculate this 
             blobberData.push(data);
-        }
+         }
 
-        console.log("blobberData", blobberData);
+         console.log("blobberData", blobberData);
 
         var payload = {
-            name: "open_connection",
-            input: {
-                client_id: ae.id,
-                max_size: 10,
-                allocation_id: allocation_id,
-                blobber_data: blobberData
+            name : "open_connection",
+            input : {
+                client_id : ae.id,
+                max_size : 10,
+                allocation_id : allocation_id,
+                blobber_data : blobberData
             }
         }
         this.executeSmartContract(ae, undefined, JSON.stringify(payload), callback, errCallback);
-    },
+    }, 
 
     //Only for testing it will remove after blobber code has this feature
     //This has to call from blobber
     makeCommitIntentTransaction: function makeCommitIntentTransaction(ae, allocation_id, client_id, transaction_id, callback, errCallback) {
         var payload = {
-            name: "close_connection",
-            input: {
-                client_id: client_id,
-                blobber_id: ae.id,
-                max_size: 10,
-                allocation_id: allocation_id,
-                transaction_id: transaction_id
+            name : "close_connection",
+            input : {
+                client_id : client_id,
+                blobber_id : ae.id,
+                max_size : 10,
+                allocation_id : allocation_id,
+                transaction_id : transaction_id
             }
         }
         this.executeSmartContract(ae, undefined, JSON.stringify(payload), callback, errCallback);
     },
 
-    makeReadIntentTransaction: function makeReadIntentTransaction() {
+    makeReadIntentTransaction : function makeReadIntentTransaction() {
 
-    },
+    },  
 
     //Blobber Methods
 
     getAllFileNamesForAllocation: async function getAllFileNamesForAllocation(allocation_id, blobber_list, path, callback, errCallback) {
-
+        
         var blobber_url, resp, data;
         var files = [];
         for (let blobber of blobber_list) {
             try {
-                blobber_url = blobber + Endpoints.ALLOCATION_FILE_LIST + allocation_id + "?path=" + path;
+                blobber_url = blobber + Endpoints.ALLOCATION_FILE_LIST + allocation_id +"?path="+path;
                 resp = await utils.getReq(blobber_url);
                 data = JSONbig.parse(resp);
 
-                if (data.entries != null && data.entries.length > 0) {
-
+                if(data.entries != null && data.entries.length > 0) {
+                    
                     for (let file_data of data.entries) {
                         /* files not contains the element we're looking for so add */
                         if (!files.some(e => e.LookupHash === file_data.LookupHash)) {
                             files.push(file_data);
-                        }
+                        } 
                     }
                 }
             }
             catch (error) {
                 errCallback(error);
             }
-        }
+        } 
         callback(files);
 
     },
 
     // End Blobber method
-
+    
     Wallet: models.Wallet,
     ChainStats: models.ChainStats,
     BlockSummary: models.BlockSummary,
@@ -315,7 +315,7 @@ module.exports = {
         DATA: 10, // A transaction to just store a piece of data on the block chain
         // STORAGE_WRITE : 101, // A transaction to write data to the blobber
         // STORAGE_READ  : 103,// A transaction to read data from the blobber
-        SMART_CONTRACT: 1000 // A smart contract transaction type
+        SMART_CONTRACT : 1000 // A smart contract transaction type
     }
 
 }
@@ -447,6 +447,6 @@ function submitTransaction(ae, toClientId, val, note, transaction_type, callback
     data.signature = utils.byteToHexString(signedData);
 
     const jsonString = JSON.stringify(data);
-    console.log("json", jsonString);
+    console.log("json",jsonString);
     makeTransReqToAllMiners(jsonString, callback, errCallback);
 }
