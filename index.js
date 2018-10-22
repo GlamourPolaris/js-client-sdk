@@ -49,7 +49,9 @@ const Endpoints = {
     GET_BALANCE: "/v1/client/get/balance?client_id=",
 
     //BLOBBER
-    ALLOCATION_FILE_LIST : "/v1/file/list/"
+    ALLOCATION_FILE_LIST : "/v1/file/list/",
+    FILE_META : "/v1/file/meta/",
+    CHALLENGE : "/v1/data/challenge"
 }
 
 
@@ -296,10 +298,49 @@ module.exports = {
 
     },
 
+    getFileMetaDataFromABlobber: function getFileMetaDataFromABlobber(blobber_url, fileName, allocation_id, path, callback, errCallback) {
+        const url = blobber_url + Endpoints.FILE_META + allocation_id +"?path="+path+"&filename="+fileName;
+        var metaPromise =  utils.getReq(url)
+
+        metaPromise.then(function(value) {
+            console.log("Meta response ", value);
+            var response = JSON.parse(value);
+
+            var fileMeta = [];
+            for (let meta of response.meta) {
+                fileMeta.push(new models.BlobberFileMetaData(meta));
+            }
+            callback(fileMeta);
+        }).catch(function(e) {
+            console.log(e); // "oh, no!"
+            errCallback(e);
+        });
+
+    },
+
+    // This method will return the tx hash for the challenge and client has to verify this transction hash with blockchain
+    challengeBlobber: function challengeBlobber(blobber_url, filename, allocation_id, path, partNumber, size, callback, errCallback) {
+
+        var block_num = Math.ceil(size / shard_size);
+        console.log("block_num", block_num);
+
+        const data_id = utils.computeStoragePartDataId(allocation_id, path,filename, partNumber); // i is the partNumber
+        console.log("data_id", data_id);
+
+        const url = blobber_url + Endpoints.CHALLENGE + "?allocation_id="+ allocation_id +"&block_num="+block_num+"&data_id="+data_id;
+        utils.getReq(url)
+            .then(function(value){
+                console.log("json response", value);
+                callback(value);
+            }).catch(function(e){
+                errCallback(e);
+            });
+    },
+
     // End Blobber method
     
     Wallet: models.Wallet,
-    ChainStats: models.ChainStats,
+    ChainStats: models.ChainStats,  
     BlockSummary: models.BlockSummary,
     Block: models.Block,
     Transaction: models.Transaction,

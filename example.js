@@ -60,7 +60,10 @@ blobbers.push('http://localhost:5056');
 
 
 
-registerBlobbers();
+
+getFileMetaDataFromABlobber(blobbers[0],"sampleFile.jpg","0cc87e7dbd7259de948e79592108ca06cb253f6be7127e42b712ec58afba2c60","/");
+
+//registerBlobbers();
 //register();
 
 //getAllFileNamesForAllocation("36f028580bb02cc8272a9a020f4200e346e276ae664e45ee80745574e2f5ab80", blobbers, "/");
@@ -352,6 +355,35 @@ function getAllFileNamesForAllocation(allocation_id, blobber_list, path) {
     sdk.getAllFileNamesForAllocation(allocation_id, blobber_list, path, function(data) {
         console.log("Data", data);
     }, function(err){
+        console.error(err);
+    });
+}
+
+function getFileMetaDataFromABlobber(blobber_url, fileName, allocation_id, path) {
+
+    sdk.getFileMetaDataFromABlobber(blobber_url,fileName, allocation_id, path, function(data) {
+        console.log("response", data);
+
+        if( data.length > 0 ) {
+            console.log("Going to chellenge on", data[0]);
+            var custom_meta = JSON.parse(data[0].custom_meta);
+            challengeBlobber(blobber_url,fileName, allocation_id, path, custom_meta.part_num, data[0].size);
+        }
+
+        
+
+    },
+    function(err){
+        console.error(err);
+    });
+
+}
+
+function challengeBlobber(blobber_url, fileName, allocation_id, path, partNumber, size) {
+    sdk.challengeBlobber(blobber_url, fileName, allocation_id, path, partNumber, size, function(data){
+        console.log("response", data);
+    },
+    function(err){
         console.error(err);
     });
 }
