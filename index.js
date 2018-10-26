@@ -37,7 +37,7 @@ const Endpoints = {
     GET_CHAIN_STATS: "v1/chain/get/stats",
     GET_BLOCK_INFO: "v1/block/get?content=",
     CHECK_TRANSACTION_STATUS: "v1/transaction/get/confirmation?hash=",
-    GET_BALANCE: "/v1/client/get/balance?client_id="
+    GET_BALANCE: "v1/client/get/balance?client_id="
 
 }
 
