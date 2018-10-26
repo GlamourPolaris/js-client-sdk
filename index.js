@@ -27,15 +27,6 @@ var models = require('./models');
 
 var miners, sharders, clusterName, version;
 
-// const data_shards = 10;
-// const parity_shards = 6;
-// const chunk_size = 640;
-// shardSize is 64 kb
-const shard_size = 64 * 1024
-
-
-
-
 const Endpoints = {
 
     REGISTER_CLIENT: 'v1/client/put',
@@ -46,12 +37,8 @@ const Endpoints = {
     GET_CHAIN_STATS: "v1/chain/get/stats",
     GET_BLOCK_INFO: "v1/block/get?content=",
     CHECK_TRANSACTION_STATUS: "v1/transaction/get/confirmation?hash=",
-    GET_BALANCE: "/v1/client/get/balance?client_id=",
+    GET_BALANCE: "/v1/client/get/balance?client_id="
 
-    //BLOBBER
-    ALLOCATION_FILE_LIST : "/v1/file/list/",
-    FILE_META : "/v1/file/meta/",
-    CHALLENGE : "/v1/data/challenge"
 }
 
 
@@ -177,167 +164,8 @@ module.exports = {
         submitTransaction(ae, toClientId, val, payload, TransactionType.SMART_CONTRACT, callback, errCallback);
     },
 
-    // Only for testing it will remove after blobber code has self registration
-    addBlobber: function addBlobber(ae, id, url, callback, errCallback){
-        var payload = {
-            name : "add_blobber",
-            input : {
-                id : id,
-                url : url
-            }
-        }
-        this.executeSmartContract(ae, undefined, JSON.stringify(payload), callback, errCallback);
-    },
 
-    allocateStorage: function allocateStorage(ae, num_reads, num_writes, data_shards, parity_shards, size, expiration_date, callback, errCallback) {
-        var payload = {
-            name : "new_allocation_request",
-            input: {
-                num_reads: num_reads,
-                num_writes: num_writes,
-                data_shards: data_shards,
-                parity_shards: parity_shards,
-                size: size,
-                expiration_date: expiration_date
-            }
-        }
-        this.executeSmartContract(ae, undefined, JSON.stringify(payload), callback, errCallback);
-    },
 
-    //This function name may get rename after finalize on the storage protocol name change
-    // file is FIle interface provided by browser : May change
-    makeWriteIntentTransaction : function makeWriteIntentTransaction(ae, allocation_id, blobber_list, path, file, data_shards, parity_shards, callback, errCallback) {
-         //compute data each part
-         //TO DO : currently logic doesnt handle if file is not divisible by 16 count
-
-         //FileSize Calculation
-         var fileSize = file.size;
-        var partSize = Math.ceil(fileSize / data_shards);
-
-        while(partSize % 8 != 0) {
-            partSize ++;
-        }
-
-         // add parity size to the file size
-         fileSize += parity_shards * shard_size;
-
-         const totalParts = data_shards + parity_shards;
-         //const partSize = Math.round(fileSize / totalParts);
-         const totalBlobbers = blobber_list.length;
-
-         var blobberData = [];
-         var data;
-         for(var i=0;i<totalParts;i++) {
-            data = {};
-            data.blobber_id = blobber_list[i % totalBlobbers]; // assigning the blobber in round robin 
-            data.data_id = utils.computeStoragePartDataId(allocation_id, path,file.name, i); // i is the partNumber
-            data.size =  partSize;
-            data.merkle_root = null; // TODO : We may able to calculate this 
-            blobberData.push(data);
-         }
-
-         console.log("blobberData", blobberData);
-
-        var payload = {
-            name : "open_connection",
-            input : {
-                client_id : ae.id,
-                allocation_id : allocation_id,
-                blobber_data : blobberData
-            }
-        }
-        this.executeSmartContract(ae, undefined, JSON.stringify(payload), callback, errCallback);
-    }, 
-
-    //Only for testing it will remove after blobber code has this feature
-    //This has to call from blobber
-    makeCommitIntentTransaction: function makeCommitIntentTransaction(ae, allocation_id, client_id, transaction_id, callback, errCallback) {
-        var payload = {
-            name : "close_connection",
-            input : {
-                client_id : client_id,
-                blobber_id : ae.id,
-                allocation_id : allocation_id,
-                transaction_id : transaction_id
-            }
-        }
-        this.executeSmartContract(ae, undefined, JSON.stringify(payload), callback, errCallback);
-    },
-
-    makeReadIntentTransaction : function makeReadIntentTransaction() {
-
-    },  
-
-    //Blobber Methods
-
-    getAllFileNamesForAllocation: async function getAllFileNamesForAllocation(allocation_id, blobber_list, path, callback, errCallback) {
-        
-        var blobber_url, resp, data;
-        var files = [];
-        for (let blobber of blobber_list) {
-            try {
-                blobber_url = blobber + Endpoints.ALLOCATION_FILE_LIST + allocation_id +"?path="+path;
-                resp = await utils.getReq(blobber_url);
-                data = JSONbig.parse(resp);
-
-                if(data.entries != null && data.entries.length > 0) {
-                    
-                    for (let file_data of data.entries) {
-                        /* files not contains the element we're looking for so add */
-                        if (!files.some(e => e.LookupHash === file_data.LookupHash)) {
-                            files.push(file_data);
-                        } 
-                    }
-                }
-            }
-            catch (error) {
-                errCallback(error);
-            }
-        } 
-        callback(files);
-
-    },
-
-    getFileMetaDataFromABlobber: function getFileMetaDataFromABlobber(blobber_url, fileName, allocation_id, path, callback, errCallback) {
-        const url = blobber_url + Endpoints.FILE_META + allocation_id +"?path="+path+"&filename="+fileName;
-        var metaPromise =  utils.getReq(url)
-
-        metaPromise.then(function(value) {
-            console.log("Meta response ", value);
-            var response = JSON.parse(value);
-
-            var fileMeta = [];
-            for (let meta of response.meta) {
-                fileMeta.push(new models.BlobberFileMetaData(meta));
-            }
-            callback(fileMeta);
-        }).catch(function(e) {
-            console.log(e); // "oh, no!"
-            errCallback(e);
-        });
-
-    },
-
-    // This method will return the tx hash for the challenge and client has to verify this transction hash with blockchain
-    challengeBlobber: function challengeBlobber(blobber_url, filename, allocation_id, path, partNumber, size, callback, errCallback) {
-
-        var block_num = Math.ceil(size / shard_size);
-        console.log("block_num", block_num);
-
-        const data_id = utils.computeStoragePartDataId(allocation_id, path,filename, partNumber); // i is the partNumber
-        console.log("data_id", data_id);
-
-        const url = blobber_url + Endpoints.CHALLENGE + "?allocation_id="+ allocation_id +"&block_num="+block_num+"&data_id="+data_id;
-        utils.getReq(url)
-            .then(function(value){
-                console.log("json response", value);
-                callback(value);
-            }).catch(function(e){
-                errCallback(e);
-            });
-    },
-
-    // End Blobber method
     
     Wallet: models.Wallet,
     ChainStats: models.ChainStats,  
@@ -348,6 +176,8 @@ module.exports = {
     Confirmation: models.Confirmation,
     merkle_tree_path: models.merkle_tree_path,
     VerificationTicket: models.VerificationTicket,
+    utils : utils,
+    
 
     TransactionType: TransactionType = {
         SEND: 0, // A transaction to send tokens to another account, state is maintained by account
@@ -369,11 +199,8 @@ async function getInformationFromRandomSharder(url, callback, errCallback) {
 
     var resp, errResp;
 
-    console.log("URL =>", url);
-
     for (let sharder of utils.shuffleArray(sharders)) {
         try {
-            console.log("Sharder URL", sharder + url);
             resp = await utils.getReq(sharder + url);
             if (resp) {
                 callback(JSONbig.parse(resp));

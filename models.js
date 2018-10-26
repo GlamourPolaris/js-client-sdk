@@ -138,15 +138,5 @@ module.exports = {
     VerificationTicket: function VerificationTicket(data) {
         this.verifier_id = data.verifier_id;
         this.signature = data.signature;
-    },
-
-    BlobberFileMetaData: function BlobberFileMetaData(data) {
-        this.filename = data.filename;
-        this.custom_meta = data.custom_meta;
-        this.size = data.size;
-        this.content_hash = data.content_hash;
     }
-
-
-
 }
