@@ -143,7 +143,7 @@ function registerClientSuccessCallback(account) {
     * Once a client is registered, it can be used for storing data or sending transactions
     */
 
-    console.log("register", account);
+    console.log("Account", account);
 
     setTimeout(
     function () {

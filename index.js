@@ -249,10 +249,9 @@ async function doParallelPostReqToAllMiners(url, jsonString) {
     var result;
 
     await PromiseAll.all(promises).then(function(response) {
-        console.log("Response", response);
         result = response;
     }, function(error) {
-        console.log("This should never happen", error);
+        console.error("This should never happen", error);
     });
 
     if(result.resolve.length == 0) {
@@ -273,25 +272,18 @@ async function makeRegReqToAllMiners(callback, errCallback, key, id, sKey) {
     data.id = id;
     const jsonString = JSON.stringify(data);
 
-    var response = await doSerialPostReqToAllMiners(url, jsonString);
+    var response = await doParallelPostReqToAllMiners(url, jsonString);
 
-    if (typeof response.data != 'undefined') {
-
-        if (response.errorCount < (miners.length - 1)) {
-            const myaccount = response.data;
-            myaccount.entity.secretKey = sKey;
-            var ae = new models.Wallet(myaccount.entity);
-
-            if (response.errorCount > 0) {
-                console.log("Partial success in registering. You may experience higher transaction failures.");
-            }
-
-            callback(ae);
-            return;
-        }
+    if (typeof response.data !== 'undefined') {
+        //We know at least one miner got the transaction. More miners the transaction reaches, better possiblity of it getting processed.
+        const myaccount = response.data;
+        myaccount.entity.secretKey = sKey;
+        var ae = new models.Wallet(myaccount.entity);
+        callback(ae);
+        return;
     }
 
-    errCallback(response.errResp);
+    errCallback(response.error);
     /* 
      Note: even though we've enough account information locally, we do not want to return that,
      because we want to make sure the account is registered. So, apps should rely on the callbacks to get account info.
@@ -300,8 +292,6 @@ async function makeRegReqToAllMiners(callback, errCallback, key, id, sKey) {
 
 async function makeTransReqToAllMiners(jsonString, callback, errCallback) {
 
-
-    //var response = await doSerialPostReqToAllMiners(Endpoints.PUT_TRANSACTION, jsonString);
     var response = await doParallelPostReqToAllMiners(Endpoints.PUT_TRANSACTION, jsonString);
 
     console.log("process received response as",response);
