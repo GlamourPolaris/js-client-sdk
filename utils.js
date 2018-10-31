@@ -18,6 +18,7 @@
 "use strict";
 
 var sha3 = require('js-sha3');
+var JSONbig = require('json-bigint');
 
 module.exports = {
     byteToHexString: function byteToHexString(uint8arr) {
@@ -83,13 +84,14 @@ module.exports = {
        Return: Returns a Promise.  
    */
     postReq: function postReq(url, jsonPostString) {
+        const self = this;
         return new Promise(function (resolve, reject) {
             var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
             const xhr = new XMLHttpRequest();
             xhr.onreadystatechange = function (e) {
                 if (xhr.readyState === 4) {
                     if (xhr.status === 200) {
-                        resolve(xhr.responseText);
+                        resolve(self.parseJson(xhr.responseText));
                     } else {
                         //console.log("Utils Here in error: " + xhr.responseText + " status = " + xhr.status)
                         //TODO: Send ErrorObject
@@ -112,14 +114,15 @@ module.exports = {
     },
 
     getReq: function getReq(url) {
-
+        const self = this;
         return new Promise(function (resolve, reject) {
             var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
             const xhr = new XMLHttpRequest();
             xhr.onreadystatechange = function (e) {
                 if (xhr.readyState === 4) {
                     if (xhr.status === 200) {
-                        resolve(xhr.responseText)
+                        //resolve(xhr.responseText)
+                        resolve(self.parseJson(xhr.responseText));                        
                     } else {
                         //console.log("Utils Here in error: " + xhr.responseText + " status = " + xhr.status)
                         //TODO: Send ErrorObject
@@ -131,6 +134,10 @@ module.exports = {
             xhr.open('get', url, true)
             xhr.send();
         })
+    },
+
+    parseJson : function(jsonString) {
+        return JSONbig.parse(jsonString)
     }
 
 

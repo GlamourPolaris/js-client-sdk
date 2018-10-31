@@ -18,7 +18,7 @@
 var nacl = require('tweetnacl');
 var sha3 = require('js-sha3');
 var fs = require('fs');
-var JSONbig = require('json-bigint');
+var PromiseAll = require('promises-all');
 
 //local import 
 var utils = require('./utils');
@@ -203,7 +203,7 @@ async function getInformationFromRandomSharder(url, callback, errCallback) {
         try {
             resp = await utils.getReq(sharder + url);
             if (resp) {
-                callback(JSONbig.parse(resp));
+                callback(resp);
                 return;
             }
             break;
@@ -235,7 +235,34 @@ async function doSerialPostReqToAllMiners(url, jsonString) {
         }
     }
 
-    return { data: JSONbig.parse(resp), errorCount: errorCount, errResp: errResp };
+    return { data: resp, errorCount: errorCount, errResp: errResp };
+}
+
+async function doParallelPostReqToAllMiners(url, jsonString) {
+
+    const urls = miners.map( miner =>  miner +  url);
+
+    //const promises = urls.map( url => utils.postReq(url, jsonString));
+    
+    const promises = urls.map( url => utils.postReq(url, jsonString));
+
+    var result;
+
+    await PromiseAll.all(promises).then(function(response) {
+        console.log("Response", response);
+        result = response;
+    }, function(error) {
+        console.log("This should never happen", error);
+    });
+
+    if(result.resolve.length == 0) {
+        // return error here
+        return {error:result.reject};
+    }
+    else {
+        console.log("Response", result.resolve[0] );
+        return {data:result.resolve[0], error: result.reject}
+    }
 }
 
 async function makeRegReqToAllMiners(callback, errCallback, key, id, sKey) {
@@ -274,21 +301,20 @@ async function makeRegReqToAllMiners(callback, errCallback, key, id, sKey) {
 async function makeTransReqToAllMiners(jsonString, callback, errCallback) {
 
 
-    var response = await doSerialPostReqToAllMiners(Endpoints.PUT_TRANSACTION, jsonString);
+    //var response = await doSerialPostReqToAllMiners(Endpoints.PUT_TRANSACTION, jsonString);
+    var response = await doParallelPostReqToAllMiners(Endpoints.PUT_TRANSACTION, jsonString);
 
-    if (typeof response.data != 'undefined') {
+    console.log("process received response as",response);
 
-        if (response.errorCount < (miners.length - 1)) {
-            //We know at least one miner got the transaction. More miners the transaction reaches, better possiblity of it getting processed.
-            var te = new models.Transaction(response.data.entity);
-
-            callback(te);
-            return
-        }
-
+    if (typeof response.data !== 'undefined') {
+        //We know at least one miner got the transaction. More miners the transaction reaches, better possiblity of it getting processed.
+        console.log(response.data.entity);
+        var te = new models.Transaction(response.data.entity);
+        callback(te);
+        return
     }
 
-    errCallback(response.errResp);
+    errCallback(response.error);
 }
 
 function submitTransaction(ae, toClientId, val, note, transaction_type, callback, errCallback) {

@@ -23,23 +23,23 @@ var sdk = require('./index')
 
 var config = {
     miners: [
-        "http://m00.eddysmalldev.testnet-0chain.net:7071/",
-        "http://m01.eddysmalldev.testnet-0chain.net:7071/",
-        "http://m02.eddysmalldev.testnet-0chain.net:7071/",
-        "http://m03.eddysmalldev.testnet-0chain.net:7071/",
-        "http://m04.eddysmalldev.testnet-0chain.net:7071/",
-        "http://m05.eddysmalldev.testnet-0chain.net:7071/"
+        "http://m00.eddysc.testnet-0chain.net:7071/",
+        "http://m01.eddysc.testnet-0chain.net:7071/",
+        "http://m02.eddysc.testnet-0chain.net:7071/",
+        "http://m03.eddysc.testnet-0chain.net:7071/",
+        "http://m04.eddysc.testnet-0chain.net:7071/",
+        "http://m05.eddysc.testnet-0chain.net:7071/"
     ],
     sharders: [
-        "http://s00.eddysmalldev.testnet-0chain.net:7171/",
-        "http://s01.eddysmalldev.testnet-0chain.net:7171/"
+        "http://s00.eddysc.testnet-0chain.net:7171/",
+        "http://s01.eddysc.testnet-0chain.net:7171/"
     ],
-    clusterName: "eddysmalldev"
+    clusterName: "eddysc"
 }
 
-//sdk.init(config);  // init with custom server configuration
+sdk.init(config);  // init with custom server configuration
 
-sdk.init(); // to use default local host servers
+//sdk.init(); // to use default local host servers
 
 var client1 = new sdk.Wallet({
     id : "5d2926deef3b0a18d31eaf088627412725993374d17ff4f42e634ae90571804a",
@@ -49,8 +49,8 @@ var client1 = new sdk.Wallet({
     secretKey: "5a9efbaebb55b3005e189e0ee981b53d8a971884b0860d6f181037b7ba649fff6f68647e75e7726d3a842a1ae72af66acd5f3a6f70b4c9b0c9fac0625a73bc72"
 });
 
-//register();
-geChainStats();
+register();
+//geChainStats();
 
 
 function geChainStats() {
@@ -147,7 +147,7 @@ function registerClientSuccessCallback(account) {
 
     setTimeout(
     function () {
-        sendTransaction(account);
+        storeData(account);
     }, 5000);
 
 }
