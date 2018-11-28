@@ -49,7 +49,8 @@ var client1 = new sdk.Wallet({
     secretKey: "5a9efbaebb55b3005e189e0ee981b53d8a971884b0860d6f181037b7ba649fff6f68647e75e7726d3a842a1ae72af66acd5f3a6f70b4c9b0c9fac0625a73bc72"
 });
 
-register();
+//register();
+restoreWallet('produce soul awful father idea moon square flush conduct across bird pact');
 //geChainStats();
 
 
@@ -137,6 +138,12 @@ function register() {
 
 }
 
+function restoreWallet(mnemoic) {
+    console.log("======================================");
+    console.log("Sending restoreWallet request", mnemoic);    
+    sdk.restoreWallet(mnemoic, registerClientSuccessCallback, registerClientErrCallback);
+}
+
 //Registration is succesful. Applications can save the account information passed for later use.
 function registerClientSuccessCallback(account) {
     /*
@@ -145,10 +152,10 @@ function registerClientSuccessCallback(account) {
 
     console.log("Account", account);
 
-    setTimeout(
-    function () {
-        storeData(account);
-    }, 5000);
+    // setTimeout(
+    // function () {
+    //     storeData(account);
+    // }, 5000);
 
 }
 

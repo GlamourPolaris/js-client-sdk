@@ -96,6 +96,7 @@ module.exports = {
         this.creation_date = data.creation_date;
         this.public_key = data.public_key;
         this.secretKey = data.secretKey;
+        this.mnemonic = data.mnemonic;
     },
 
     Transaction: function Transaction(data) {

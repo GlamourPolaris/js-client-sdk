@@ -19,6 +19,7 @@ var nacl = require('tweetnacl');
 var sha3 = require('js-sha3');
 var fs = require('fs');
 var PromiseAll = require('promises-all');
+var bip39 = require('bip39');
 
 //local import 
 var utils = require('./utils');
@@ -133,19 +134,12 @@ module.exports = {
     },
 
     registerClient: function registerClient(callback, errCallback) {
-
-        const keys = nacl.sign.keyPair();
-        const key = utils.byteToHexString(keys.publicKey);
-        const id = sha3.sha3_256(keys.publicKey);
-        const sKey = utils.byteToHexString(keys.secretKey);
-
-        makeRegReqToAllMiners(callback, errCallback, key, id, sKey);
-
+        const mnemonic = bip39.generateMnemonic()
+        createWallet(mnemonic, callback, errCallback);
     },
 
-    registerClientWithExistingInfo: function registerClientWithExistingInfo(account, callback, errCallback) {
-        console.log("account", account);
-        makeRegReqToAllMiners(callback, errCallback, account.public_key, account.id, account.secretKey);
+    restoreWallet: function recoverWallet(mnemonic, callback, errCallback) {
+        createWallet(mnemonic, callback, errCallback);
     },
 
     storeData: function storeData(ae, payload, callback, errCallback) {
@@ -190,7 +184,6 @@ module.exports = {
 }
 
 ///^^^^^^  End of expored functions   ^^^^^^////////
-
 
 // This method will try to get the information from any one of the sharder randomly
 // 1. shuffle the array 
@@ -264,7 +257,16 @@ async function doParallelPostReqToAllMiners(url, jsonString) {
     }
 }
 
-async function makeRegReqToAllMiners(callback, errCallback, key, id, sKey) {
+function createWallet(mnemonic, callback, errCallback) {
+    const seed = bip39.mnemonicToSeed(mnemonic).slice(32);
+    const keys = nacl.sign.keyPair.fromSeed(seed);//nacl.sign.keyPair();
+    const key = utils.byteToHexString(keys.publicKey);
+    const id = sha3.sha3_256(keys.publicKey);
+    const sKey = utils.byteToHexString(keys.secretKey);
+    makeRegReqToAllMiners(callback, errCallback, key, id, sKey, mnemonic);    
+}
+
+async function makeRegReqToAllMiners(callback, errCallback, key, id, sKey, mnemonic) {
 
     const url = Endpoints.REGISTER_CLIENT;
     var data = {};
@@ -278,6 +280,7 @@ async function makeRegReqToAllMiners(callback, errCallback, key, id, sKey) {
         //We know at least one miner got the transaction. More miners the transaction reaches, better possiblity of it getting processed.
         const myaccount = response.data;
         myaccount.entity.secretKey = sKey;
+        myaccount.entity.mnemonic = mnemonic;
         var ae = new models.Wallet(myaccount.entity);
         callback(ae);
         return;
