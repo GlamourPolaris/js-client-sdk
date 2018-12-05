@@ -17,7 +17,6 @@
 
 var nacl = require('tweetnacl');
 var sha3 = require('js-sha3');
-var fs = require('fs');
 var PromiseAll = require('promises-all');
 var bip39 = require('bip39');
 
@@ -52,19 +51,29 @@ module.exports = {
 
     /////////////SDK Stuff below //////////////
     init: function init(configObject) {
+        var config;
         if (typeof configObject != "undefined" && configObject.hasOwnProperty('miners') &&
             configObject.hasOwnProperty('sharders') && configObject.hasOwnProperty('clusterName')) {
-            miners = configObject.miners;
-            sharders = configObject.sharders;
-            clusterName = configObject.clusterName;
+                config = configObject;
         }
         else {
-            const content = fs.readFileSync(__dirname + "/json/local-settings.json");
-            const jsonContent = JSON.parse(content);
-            miners = jsonContent.public.miner_access_points;
-            sharders = jsonContent.public.sharder_access_points;
-            clusterName = jsonContent.public.cluster_name;
+            const jsonContent = {
+                "miners": [
+                    "http://localhost:7071/",
+                    "http://localhost:7072/",
+                    "http://localhost:7073/"
+                ],
+                "sharders": [
+                    "http://localhost:7171/"
+                ],
+                "transaction_timeout": 15,
+                "clusterName": "local"
+            };
+            config = jsonContent;
         }
+        miners = config.miners;
+        sharders = config.sharders;
+        clusterName = config.clusterName;        
         version = "0.8.0";
     },
 
@@ -152,17 +161,17 @@ module.exports = {
     },
 
     //Smart contract address need to pass in toClientId
-    executeSmartContract: function executeSmartContract(ae, to_client_id , payload, callback, errCallback) {
-        const toClientId =  typeof to_client_id == "undefined" ? "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7" : to_client_id;
+    executeSmartContract: function executeSmartContract(ae, to_client_id, payload, callback, errCallback) {
+        const toClientId = typeof to_client_id == "undefined" ? "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7" : to_client_id;
         const val = 0;
         submitTransaction(ae, toClientId, val, payload, TransactionType.SMART_CONTRACT, callback, errCallback);
     },
 
 
 
-    
+
     Wallet: models.Wallet,
-    ChainStats: models.ChainStats,  
+    ChainStats: models.ChainStats,
     BlockSummary: models.BlockSummary,
     Block: models.Block,
     Transaction: models.Transaction,
@@ -170,15 +179,15 @@ module.exports = {
     Confirmation: models.Confirmation,
     merkle_tree_path: models.merkle_tree_path,
     VerificationTicket: models.VerificationTicket,
-    utils : utils,
-    
+    utils: utils,
+
 
     TransactionType: TransactionType = {
         SEND: 0, // A transaction to send tokens to another account, state is maintained by account
         DATA: 10, // A transaction to just store a piece of data on the block chain
         // STORAGE_WRITE : 101, // A transaction to write data to the blobber
         // STORAGE_READ  : 103,// A transaction to read data from the blobber
-        SMART_CONTRACT : 1000 // A smart contract transaction type
+        SMART_CONTRACT: 1000 // A smart contract transaction type
     }
 
 }
@@ -233,27 +242,27 @@ async function doSerialPostReqToAllMiners(url, jsonString) {
 
 async function doParallelPostReqToAllMiners(url, jsonString) {
 
-    const urls = miners.map( miner =>  miner +  url);
+    const urls = miners.map(miner => miner + url);
 
     //const promises = urls.map( url => utils.postReq(url, jsonString));
-    
-    const promises = urls.map( url => utils.postReq(url, jsonString));
+
+    const promises = urls.map(url => utils.postReq(url, jsonString));
 
     var result;
 
-    await PromiseAll.all(promises).then(function(response) {
+    await PromiseAll.all(promises).then(function (response) {
         result = response;
-    }, function(error) {
+    }, function (error) {
         console.error("This should never happen", error);
     });
 
-    if(result.resolve.length == 0) {
+    if (result.resolve.length == 0) {
         // return error here
-        return {error:result.reject};
+        return { error: result.reject };
     }
     else {
-        console.log("Response", result.resolve[0] );
-        return {data:result.resolve[0], error: result.reject}
+        console.log("Response", result.resolve[0]);
+        return { data: result.resolve[0], error: result.reject }
     }
 }
 
@@ -263,7 +272,7 @@ function createWallet(mnemonic, callback, errCallback) {
     const key = utils.byteToHexString(keys.publicKey);
     const id = sha3.sha3_256(keys.publicKey);
     const sKey = utils.byteToHexString(keys.secretKey);
-    makeRegReqToAllMiners(callback, errCallback, key, id, sKey, mnemonic);    
+    makeRegReqToAllMiners(callback, errCallback, key, id, sKey, mnemonic);
 }
 
 async function makeRegReqToAllMiners(callback, errCallback, key, id, sKey, mnemonic) {
@@ -297,7 +306,7 @@ async function makeTransReqToAllMiners(jsonString, callback, errCallback) {
 
     var response = await doParallelPostReqToAllMiners(Endpoints.PUT_TRANSACTION, jsonString);
 
-    console.log("process received response as",response);
+    console.log("process received response as", response);
 
     if (typeof response.data !== 'undefined') {
         //We know at least one miner got the transaction. More miners the transaction reaches, better possiblity of it getting processed.
@@ -332,6 +341,6 @@ function submitTransaction(ae, toClientId, val, note, transaction_type, callback
     data.signature = utils.byteToHexString(signedData);
 
     const jsonString = JSON.stringify(data);
-    console.log("json",jsonString);
+    console.log("json", jsonString);
     makeTransReqToAllMiners(jsonString, callback, errCallback);
 }
