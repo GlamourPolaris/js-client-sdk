@@ -15,31 +15,38 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-var nacl = require('tweetnacl');
-var sha3 = require('js-sha3');
-var PromiseAll = require('promises-all');
-var bip39 = require('bip39');
+const nacl = require('tweetnacl');
+const sha3 = require('js-sha3');
+const bip39 = require('bip39');
 
 //local import 
-var utils = require('./utils');
+const utils = require('./utils');
 var models = require('./models');
 "use strict";
 
 var miners, sharders, clusterName, version;
 
 const Endpoints = {
-
     REGISTER_CLIENT: 'v1/client/put',
     PUT_TRANSACTION: 'v1/transaction/put',
 
     GET_RECENT_FINALIZED: "v1/block/get/recent_finalized",
     GET_LATEST_FINALIZED: "v1/block/get/latest_finalized",
     GET_CHAIN_STATS: "v1/chain/get/stats",
-    GET_BLOCK_INFO: "v1/block/get?content=",
-    CHECK_TRANSACTION_STATUS: "v1/transaction/get/confirmation?hash=",
-    GET_BALANCE: "v1/client/get/balance?client_id="
-
+    GET_BLOCK_INFO: "v1/block/get",
+    CHECK_TRANSACTION_STATUS: "v1/transaction/get/confirmation",
+    GET_BALANCE: "v1/client/get/balance="
 }
+
+const TransactionType = {
+    SEND: 0, // A transaction to send tokens to another account, state is maintained by account
+    DATA: 10, // A transaction to just store a piece of data on the block chain
+    // STORAGE_WRITE : 101, // A transaction to write data to the blobber
+    // STORAGE_READ  : 103,// A transaction to read data from the blobber
+    SMART_CONTRACT: 1000 // A smart contract transaction type
+}
+
+const SmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7";
 
 
 module.exports = {
@@ -54,7 +61,7 @@ module.exports = {
         var config;
         if (typeof configObject != "undefined" && configObject.hasOwnProperty('miners') &&
             configObject.hasOwnProperty('sharders') && configObject.hasOwnProperty('clusterName')) {
-                config = configObject;
+            config = configObject;
         }
         else {
             const jsonContent = {
@@ -73,7 +80,7 @@ module.exports = {
         }
         miners = config.miners;
         sharders = config.sharders;
-        clusterName = config.clusterName;        
+        clusterName = config.clusterName;
         version = "0.8.0";
     },
 
@@ -81,94 +88,85 @@ module.exports = {
         return "version: " + version + " cluster: " + clusterName;
     },
 
-    geChainStats: function geChainStats(callback, errCallback) {
-        getInformationFromRandomSharder(Endpoints.GET_CHAIN_STATS, function (data) {
-            callback(new models.ChainStats(data));
-        }, errCallback);
+    geChainStats: function geChainStats() {
+        return getInformationFromRandomSharder(Endpoints.GET_CHAIN_STATS, {}, (rawData) => {
+            return new models.ChainStats(rawData)
+        });
     },
 
-    getRecentFinalized: function getRecentFinalized(callback, errCallback) {
-        getInformationFromRandomSharder(Endpoints.GET_RECENT_FINALIZED, function (data) {
+    getRecentFinalized: function getRecentFinalized() {
+        return getInformationFromRandomSharder(Endpoints.GET_RECENT_FINALIZED, {}, (rawData) => {
             var blocks = [];
-            for (let bs of data) {
+            for (let bs of rawData) {
                 blocks.push(new models.BlockSummary(bs));
             }
-            callback(blocks);
-
-        }, errCallback);
+            return blocks;
+        });
     },
 
-    getLatestFinalized: function getLatestFinalized(callback, errCallback) {
-        getInformationFromRandomSharder(Endpoints.GET_LATEST_FINALIZED, function (data) {
-            callback(new models.BlockSummary(data));
-        }, errCallback);
+    getLatestFinalized: function getLatestFinalized() {
+        return getInformationFromRandomSharder(Endpoints.GET_LATEST_FINALIZED, {}, (rawData) => {
+            return new models.BlockSummary(rawData)
+        });
     },
 
-    getBlockInfoByHash: function getBlockInfoByHash(hash, options, callback, errCallback) {
-        const url = Endpoints.GET_BLOCK_INFO + options + "&block=" + hash;
+    getBlockInfoByHash: function getBlockInfoByHash(hash, options) {
         const blockInfoOptions = this.BlockInfoOptions;
-
-        getInformationFromRandomSharder(url, function (data) {
+        return getInformationFromRandomSharder(Endpoints.GET_BLOCK_INFO, { block: hash, content: options }, (rawData) => {
             if (options == blockInfoOptions.HEADER) {
-                callback(new models.BlockSummary(data.header));
+                return new models.BlockSummary(rawData.header);
             } else {
-                callback(new models.Block(data.block));
+                return new models.Block(rawData.block);
             }
-        }, errCallback);
+        });
+
     },
 
-    getBlockInfoByRound: function getBlockInfoByRound(round, options, callback, errCallback) {
-        const url = Endpoints.GET_BLOCK_INFO + options + "&round=" + round;
+    getBlockInfoByRound: function getBlockInfoByRound(round, options) {
         const blockInfoOptions = this.BlockInfoOptions;
-
-        getInformationFromRandomSharder(url, function (data) {
+        return getInformationFromRandomSharder(Endpoints.GET_BLOCK_INFO, { round: round, content: options }, (rawData) => {
             if (options == blockInfoOptions.HEADER) {
-                callback(new models.BlockSummary(data.header));
+                return new models.BlockSummary(rawData.header);
             } else {
-                callback(new models.Block(data.block));
+                return new models.Block(rawData.block);
             }
-        }, errCallback);
+        });
     },
 
-    getBalance: function getBalance(client_id, callback, errCallback) {
-        const url = Endpoints.GET_BALANCE + client_id;
-        getInformationFromRandomSharder(url, callback, errCallback);
+    getBalance: function getBalance(client_id) {
+        return getInformationFromRandomSharder(Endpoints.GET_BALANCE, { client_id: client_id });
     },
 
-    checkTransactionStatus: function checkTransactionStatus(hash, callback, errCallback) {
-        const url = Endpoints.CHECK_TRANSACTION_STATUS + hash;
-        getInformationFromRandomSharder(url, function (data) {
-            callback(new models.TransactionDetail(data));
-        }, errCallback);
+    checkTransactionStatus: function checkTransactionStatus(hash) {
+        return getInformationFromRandomSharder(Endpoints.CHECK_TRANSACTION_STATUS, { hash: hash }, (rawData) => {
+            return new models.TransactionDetail(rawData)
+        });
     },
 
-    registerClient: function registerClient(callback, errCallback) {
+    registerClient: function registerClient() {
         const mnemonic = bip39.generateMnemonic()
-        createWallet(mnemonic, callback, errCallback);
+        return createWallet(mnemonic);
     },
 
-    restoreWallet: function recoverWallet(mnemonic, callback, errCallback) {
-        createWallet(mnemonic, callback, errCallback);
+    restoreWallet: function recoverWallet(mnemonic) {
+        return createWallet(mnemonic);
     },
 
-    storeData: function storeData(ae, payload, callback, errCallback) {
+    storeData: function storeData(ae, payload) {
         const toClientId = "";
-        submitTransaction(ae, toClientId, 0, payload, TransactionType.DATA, callback, errCallback);
+        return submitTransaction(ae, toClientId, 0, payload, TransactionType.DATA);
     },
 
-    sendTransaction: function sendTransaction(ae, toClientId, val, note, callback, errCallback) {
-        submitTransaction(ae, toClientId, val, note, TransactionType.SEND, callback, errCallback);
+    sendTransaction: function sendTransaction(ae, toClientId, val, note) {
+        return submitTransaction(ae, toClientId, val, note, TransactionType.SEND);
     },
 
     //Smart contract address need to pass in toClientId
-    executeSmartContract: function executeSmartContract(ae, to_client_id, payload, callback, errCallback) {
-        const toClientId = typeof to_client_id == "undefined" ? "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7" : to_client_id;
+    executeSmartContract: function executeSmartContract(ae, to_client_id, payload) {
+        const toClientId = typeof to_client_id === "undefined" ? SmartContractAddress : to_client_id;
         const val = 0;
-        submitTransaction(ae, toClientId, val, payload, TransactionType.SMART_CONTRACT, callback, errCallback);
+        return submitTransaction(ae, toClientId, val, payload, TransactionType.SMART_CONTRACT);
     },
-
-
-
 
     Wallet: models.Wallet,
     ChainStats: models.ChainStats,
@@ -179,16 +177,7 @@ module.exports = {
     Confirmation: models.Confirmation,
     merkle_tree_path: models.merkle_tree_path,
     VerificationTicket: models.VerificationTicket,
-    utils: utils,
-
-
-    TransactionType: TransactionType = {
-        SEND: 0, // A transaction to send tokens to another account, state is maintained by account
-        DATA: 10, // A transaction to just store a piece of data on the block chain
-        // STORAGE_WRITE : 101, // A transaction to write data to the blobber
-        // STORAGE_READ  : 103,// A transaction to read data from the blobber
-        SMART_CONTRACT: 1000 // A smart contract transaction type
-    }
+    utils: utils
 
 }
 
@@ -197,129 +186,61 @@ module.exports = {
 // This method will try to get the information from any one of the sharder randomly
 // 1. shuffle the array 
 // 2. try get the information from first sharder in the array. if its success will return immedialtely with response otherwise try to get from next sharder until it reach end of array
-async function getInformationFromRandomSharder(url, callback, errCallback) {
+async function getInformationFromRandomSharder(url, params, parser) {
 
-    var resp, errResp;
+    var errResp = [];
 
-    for (let sharder of utils.shuffleArray(sharders)) {
-        try {
-            resp = await utils.getReq(sharder + url);
-            if (resp) {
-                callback(resp);
-                return;
+    return new Promise(async (resolve, reject) => {
+        for (let sharder of utils.shuffleArray(sharders)) {
+            //console.log("Calling sharder .....", sharder)
+            try {
+                response = await utils.getReq(sharder + url, params); //sharder + url
+                //console.log("response from sharder",response.data);
+                console.log(response.status, response.statusText);
+                if (response.data) {
+                    const data = typeof parser !== "undefined" ? parser(response.data) : response.data;
+                    resolve(data);
+                    break;
+                }
             }
-            break;
+            catch (error) {
+                console.log("Error from sharder", error.text);
+                errResp.push({ "sharder": sharder, "error": error });
+            }
         }
-        catch (error) {
-            errResp = error;
-        }
-    }
-
-    errCallback(errResp);
-}
-
-async function doSerialPostReqToAllMiners(url, jsonString) {
-
-    var errorCount = 0;
-    var resp, errResp;
-    var apiURL;
-
-    for (let miner of miners) {
-        try {
-            apiURL = miner + url;
-            resp = await utils.postReq(apiURL, jsonString);
-
-        }
-        catch (error) {
-            console.error("doSerialPostReqToAllMiners", error);
-            errorCount += 1;
-            errResp = error;
-        }
-    }
-
-    return { data: resp, errorCount: errorCount, errResp: errResp };
-}
-
-async function doParallelPostReqToAllMiners(url, jsonString) {
-
-    const urls = miners.map(miner => miner + url);
-
-    //const promises = urls.map( url => utils.postReq(url, jsonString));
-
-    const promises = urls.map(url => utils.postReq(url, jsonString));
-
-    var result;
-
-    await PromiseAll.all(promises).then(function (response) {
-        result = response;
-    }, function (error) {
-        console.error("This should never happen", error);
+        console.log("Error response", errResp);
+        reject(errResp);
     });
 
-    if (result.resolve.length == 0) {
-        // return error here
-        return { error: result.reject };
-    }
-    else {
-        console.log("Response", result.resolve[0]);
-        return { data: result.resolve[0], error: result.reject }
-    }
 }
 
-function createWallet(mnemonic, callback, errCallback) {
+function createWallet(mnemonic) {
     const seed = bip39.mnemonicToSeed(mnemonic).slice(32);
     const keys = nacl.sign.keyPair.fromSeed(seed);//nacl.sign.keyPair();
     const key = utils.byteToHexString(keys.publicKey);
     const id = sha3.sha3_256(keys.publicKey);
     const sKey = utils.byteToHexString(keys.secretKey);
-    makeRegReqToAllMiners(callback, errCallback, key, id, sKey, mnemonic);
-}
 
-async function makeRegReqToAllMiners(callback, errCallback, key, id, sKey, mnemonic) {
-
-    const url = Endpoints.REGISTER_CLIENT;
     var data = {};
     data.public_key = key;
     data.id = id;
-    const jsonString = JSON.stringify(data);
 
-    var response = await doParallelPostReqToAllMiners(url, jsonString);
-
-    if (typeof response.data !== 'undefined') {
-        //We know at least one miner got the transaction. More miners the transaction reaches, better possiblity of it getting processed.
-        const myaccount = response.data;
-        myaccount.entity.secretKey = sKey;
-        myaccount.entity.mnemonic = mnemonic;
-        var ae = new models.Wallet(myaccount.entity);
-        callback(ae);
-        return;
-    }
-
-    errCallback(response.error);
-    /* 
-     Note: even though we've enough account information locally, we do not want to return that,
-     because we want to make sure the account is registered. So, apps should rely on the callbacks to get account info.
-     */
+    return new Promise(function (resolve, reject) {
+        utils.doParallelPostReqToAllMiners(miners, Endpoints.REGISTER_CLIENT, data)
+            .then((response) => {
+                const myaccount = response;
+                myaccount.entity.secretKey = sKey;
+                myaccount.entity.mnemonic = mnemonic;
+                var ae = new models.Wallet(myaccount.entity);
+                resolve(response);
+            })
+            .catch((error) => {
+                reject(error);
+            })
+    });
 }
 
-async function makeTransReqToAllMiners(jsonString, callback, errCallback) {
-
-    var response = await doParallelPostReqToAllMiners(Endpoints.PUT_TRANSACTION, jsonString);
-
-    console.log("process received response as", response);
-
-    if (typeof response.data !== 'undefined') {
-        //We know at least one miner got the transaction. More miners the transaction reaches, better possiblity of it getting processed.
-        console.log(response.data.entity);
-        var te = new models.Transaction(response.data.entity);
-        callback(te);
-        return
-    }
-
-    errCallback(response.error);
-}
-
-function submitTransaction(ae, toClientId, val, note, transaction_type, callback, errCallback) {
+function submitTransaction(ae, toClientId, val, note, transaction_type) {
 
     const hashPayload = sha3.sha3_256(note);
     const ts = Math.floor(new Date().getTime() / 1000);
@@ -340,7 +261,14 @@ function submitTransaction(ae, toClientId, val, note, transaction_type, callback
     data.hash = hash;
     data.signature = utils.byteToHexString(signedData);
 
-    const jsonString = JSON.stringify(data);
-    console.log("json", jsonString);
-    makeTransReqToAllMiners(jsonString, callback, errCallback);
+    return new Promise(function (resolve, reject) {
+        utils.doParallelPostReqToAllMiners(miners, Endpoints.PUT_TRANSACTION, data)
+            .then((response) => {
+                resolve(new models.Transaction(response.entity));
+            })
+            .catch((error) => {
+                reject(error);
+            })
+    });
+
 }

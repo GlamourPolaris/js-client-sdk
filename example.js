@@ -15,7 +15,10 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-var sdk = require('./index')
+var sdk = require('./index');
+
+var utils = require('./utils');
+
 
 /*
 * Initializes 0chain js-client-sdk. Must be called once before calling SDK functions
@@ -37,188 +40,31 @@ var config = {
     clusterName: "eddysc"
 }
 
-sdk.init(config);  // init with custom server configuration
+//sdk.init(config);  // init with custom server configuration
 
-//sdk.init(); // to use default local host servers
+sdk.init(); // to use default local host servers
 
-var client1 = new sdk.Wallet({
-    id : "5d2926deef3b0a18d31eaf088627412725993374d17ff4f42e634ae90571804a",
-    version : "1.0", 
-    creation_date : 1538603379, 
-    public_key: "6f68647e75e7726d3a842a1ae72af66acd5f3a6f70b4c9b0c9fac0625a73bc72", 
-    secretKey: "5a9efbaebb55b3005e189e0ee981b53d8a971884b0860d6f181037b7ba649fff6f68647e75e7726d3a842a1ae72af66acd5f3a6f70b4c9b0c9fac0625a73bc72"
-});
-
-//register();
-restoreWallet('produce soul awful father idea moon square flush conduct across bird pact');
-//geChainStats();
-
-
-function geChainStats() {
-
-    console.log("======================================")
-    console.log("Getting Chain Stats");
-
-    sdk.geChainStats(function (data) {
-        console.log("ChainStats", data);
-        getRecentFinalized();
-    }, function (err) {
-        console.error("chain status", err);
+sdk.registerClient()
+    .then((response) => {
+        console.log("Client Registered Successfully ....");
+        return response.entity;
+    })
+    .then(async (user) => {
+        console.log("User ", user);
+        console.log("Waiting 3 seconds to submit data");
+        await utils.sleep(3000);
+        return sdk.storeData(user, "My data...")
+    })
+    .then(async (tx) => {
+        console.log("Transaction posted Successfully ....", tx);
+        console.log("Waiting 3 seconds to submit data");
+        await utils.sleep(3000);
+        return sdk.checkTransactionStatus(tx.hash)
+    })
+    .then((txDetail) => {
+        console.log("txDetail ", txDetail);
+    })
+    .catch((error) => {
+        console.log("My Error", error)
     });
-}
-
-
-function getRecentFinalized() {
-
-    console.log("======================================");
-    console.log("Getting RecentFinalized");
-
-    sdk.getRecentFinalized(function (data) {
-        console.log("RecentFinalized", data);
-        getLatestFinalized();
-    }, function (err) {
-        console.log(err);
-    });
-}
-
-function getLatestFinalized() {
-    console.log("======================================");
-    console.log("Getting LatestFinalized");
-
-    sdk.getLatestFinalized(function (data) {
-        console.log("LatestFinalized", data)
-        getBlockInfoByHash(data.hash);
-    }, function (err) {
-        console.log(err);
-    });
-}
-
-function getBlockInfoByHash(hash) {
-    console.log("======================================");
-    console.log("Getting getBlockInfoByHash");
-
-    sdk.getBlockInfoByHash(hash, sdk.BlockInfoOptions.FULL, function (data) {
-        getBlockInfoByRound(data.round);
-    }, function (err) {
-        console.log(err);
-    });
-}
-
-function getBlockInfoByRound(round) {
-    console.log("======================================");
-    console.log("Getting BlockInfoByRound");
-
-    sdk.getBlockInfoByRound(round, sdk.BlockInfoOptions.FULL, function (data) {
-        register();
-    }, function (err) {
-        console.log(err);
-    });
-}
-
-function getBalance(client_id) {
-    console.log("======================================");
-    console.log("Getting Balance");
-
-    sdk.getBalance(client_id, function (data) {
-        console.log(data);
-    }, function (err) {
-        console.log(err);
-    });
-}
-
-/*
- * Before placing any transactions or storing data, a client must be registered. 
- * Registering a client is equivalent to creating a wallet on some blockchains. 
- * For this SDK, when a client is created a sample amount of tokens are added to the account.
-*/
-function register() {
-    console.log("======================================");
-    console.log("Sending registerClient request")
-    sdk.registerClient(registerClientSuccessCallback, registerClientErrCallback)
-
-}
-
-function restoreWallet(mnemoic) {
-    console.log("======================================");
-    console.log("Sending restoreWallet request", mnemoic);    
-    sdk.restoreWallet(mnemoic, registerClientSuccessCallback, registerClientErrCallback);
-}
-
-//Registration is succesful. Applications can save the account information passed for later use.
-function registerClientSuccessCallback(account) {
-    /*
-    * Once a client is registered, it can be used for storing data or sending transactions
-    */
-
-    console.log("Account", account);
-
-    // setTimeout(
-    // function () {
-    //     storeData(account);
-    // }, 5000);
-
-}
-
-function registerClientErrCallback(err) {
-    console.log("\nHere in registerClientErrCallback : " + err)
-}
-
-function storeData(account) {
-    setTimeout(
-        function () {
-            console.log("\nSending storeData request")
-            //replace "My data..." with the data to be stored
-            sdk.storeData(account, "My data...", verifyTransaction, sendTransactionErrCallback)
-        }, 5000) //giving 3 seconds for the account to be created and propagated to all nodes                             
-}
-
-function sendTransaction(account) {
-    setTimeout(
-        function () {
-            //just a sample clientID that is known to exist that can receive the transaction
-            toClientId = "22a8f649c997b057047fde04fa0d98acc02b2c4328b05f5b9d71af5ddfea6317"
-            console.log("\nSending transaction request")
-            sdk.sendTransaction(account, toClientId, 10, "Example transaction...", verifyTransaction, sendTransactionErrCallback)
-        }, 5000) //giving 5 seconds for the account to be created and propagated to all nodes 
-
-}
-
-function sendTransactionErrCallback(err) {
-    console.log("\nHere in sendTransactionErrCallback : " + err)
-}
-
-//SendTransaction or StoreData request is succesful. A typical application would store the transaction for later use.
-function verifyTransaction(transaction) {
-
-    console.log("Transaction", transaction);
-
-    setTimeout(
-        function () {
-            //The has provided as part of transaction object is most important piece of information.
-            console.log("\nSending verifyTransaction for hash: " + transaction.hash)
-            sdk.checkTransactionStatus(transaction.hash, function (data) {
-                console.log("transaction detail", data);
-            }, verifyTransactionErrCallback)
-        }, 5000) //giving 5 seconds for the transaction to go through
-
-}
-
-
-function verifyTransactionErrCallback(err) {
-    /*
-        Note: If you get an error "400--entity_not_found: not found with txn_summary id = xxx", 
-        means it is not YET there. You should retry after giving a few seconds break.
-    */
-    console.log("\nReceived error for verifyTransaction : " + err)
-}
-
-//-------------------------------- Handy Functions -----------------------
-//Check transaction details from hash
-
-function verifyTransactionByHash(hash) {
-
-    console.log("\nSending verifyTransaction for hash: " + hash)
-    sdk.checkTransactionStatus(hash, getTransactionDetails, verifyTransactionErrCallback)
-
-}
 
