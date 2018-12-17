@@ -236,7 +236,8 @@ module.exports = {
     Confirmation: models.Confirmation,
     merkle_tree_path: models.merkle_tree_path,
     VerificationTicket: models.VerificationTicket,
-    utils: utils
+    utils: utils,
+    TransactionType: TransactionType
 
 }
 
