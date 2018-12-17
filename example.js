@@ -53,7 +53,7 @@ var activeWallet = {};
 sdk.registerClient()
     .then((response) => {
         console.log("Client Registered Successfully ....");
-        return response.entity;
+        return response;
     })
     .then(async (user) => {
         activeWallet = user;
@@ -71,7 +71,7 @@ sdk.registerClient()
     .then((txDetail) => {
         console.log("txDetail ", txDetail);
         console.log("Allocating storage .......")
-        return sdk.allocateStorage(activeWallet,10000,2,1,1*1024*1024*1024,new Date(new Date().setFullYear(new Date().getFullYear() + 1)).getTime())
+        return sdk.allocateStorage(activeWallet,10000,2,1,sdk.AllocationTypes.FREE,1*1024*1024*1024,new Date(new Date().setFullYear(new Date().getFullYear() + 1)).getTime())
     }).
     then(async (tx) => {
         console.log("Allocation Transaction posted Successfully ....", tx);

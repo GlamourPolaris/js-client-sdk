@@ -178,13 +178,14 @@ module.exports = {
         return submitTransaction(ae, toClientId, val, payload, TransactionType.SMART_CONTRACT);
     },
 
-    allocateStorage: function allocateStorage(ae, num_writes, data_shards, parity_shards, size, expiration_date) {
+    allocateStorage: function allocateStorage(ae, num_writes, data_shards, parity_shards, type, size, expiration_date) {
         const payload = {
             name: "new_allocation_request",
             input: {
                 num_writes: num_writes,
                 data_shards: data_shards,
                 parity_shards: parity_shards,
+                type: type,
                 size: size,
                 expiration_date: expiration_date
             }
