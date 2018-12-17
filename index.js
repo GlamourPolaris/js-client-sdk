@@ -60,6 +60,12 @@ module.exports = {
         FULL: "full"
     },
 
+    AllocationTypes: {
+        FREE : "Free",
+        PREMIUM: "Premium",
+        MONETIZE: "Monetize"
+    },
+
     /////////////SDK Stuff below //////////////
     init: function init(configObject) {
         var config;

@@ -43,7 +43,10 @@ var config = {
 //sdk.init(config);  // init with custom server configuration
 
 sdk.init(); // to use default local host servers
-console.log(sdk.TransactionType);
+//console.log(sdk.TransactionType);
+console.log(sdk.AllocationTypes);
+
+
 //critic drop upper panther bean test arch announce problem put harsh flower
 var activeWallet = {};
 
