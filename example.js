@@ -43,6 +43,8 @@ var config = {
 //sdk.init(config);  // init with custom server configuration
 
 sdk.init(); // to use default local host servers
+//critic drop upper panther bean test arch announce problem put harsh flower
+var activeWallet = {};
 
 sdk.registerClient()
     .then((response) => {
@@ -50,6 +52,7 @@ sdk.registerClient()
         return response.entity;
     })
     .then(async (user) => {
+        activeWallet = user;
         console.log("User ", user);
         console.log("Waiting 3 seconds to submit data");
         await utils.sleep(3000);
@@ -63,8 +66,42 @@ sdk.registerClient()
     })
     .then((txDetail) => {
         console.log("txDetail ", txDetail);
+        console.log("Allocating storage .......")
+        return sdk.allocateStorage(activeWallet,10000,2,1,1*1024*1024*1024,new Date(new Date().setFullYear(new Date().getFullYear() + 1)).getTime())
+    }).
+    then(async (tx) => {
+        console.log("Allocation Transaction posted Successfully ....", tx);
+        console.log("Waiting 3 seconds to submit data");
+        await utils.sleep(3000);        
+        return sdk.checkTransactionStatus(tx.hash)
+    })
+    .then((txDetail) => {
+        console.log("Allocation transaction detail ", txDetail);
     })
     .catch((error) => {
         console.log("My Error", error)
     });
+
+
+    
+    return;
+
+    //Chain API Test
+
+    // sdk.geChainStats()
+    //     .then((chainStats) => {
+    //         console.log("chainStats", chainStats);
+    //         return sdk.getLatestFinalized();
+    //     })
+    //     .then((latestBlock) => {
+    //         console.log("latestBlock", latestBlock);
+    //         return sdk.getRecentFinalized();
+    //     })
+    //     .then((recentBlocks) => {
+    //         console.log("recentBlocks", recentBlocks);
+    //         return sdk.getBlockInfoByRound(100);
+    //     })
+    //     .then((hundredblock) => {
+    //         console.log("hundredblock", hundredblock);
+    //     })
 

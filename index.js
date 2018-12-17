@@ -35,7 +35,11 @@ const Endpoints = {
     GET_CHAIN_STATS: "v1/chain/get/stats",
     GET_BLOCK_INFO: "v1/block/get",
     CHECK_TRANSACTION_STATUS: "v1/transaction/get/confirmation",
-    GET_BALANCE: "v1/client/get/balance="
+    GET_BALANCE: "v1/client/get/balance=",
+
+    //BLOBBER
+    ALLOCATION_FILE_LIST: "/v1/file/list/",
+    FILE_META: "/v1/file/meta/",
 }
 
 const TransactionType = {
@@ -84,17 +88,17 @@ module.exports = {
         version = "0.8.0";
     },
 
-    getSdkMetadata: function getSdkMetadata() {
+    getSdkMetadata: () => {
         return "version: " + version + " cluster: " + clusterName;
     },
 
-    geChainStats: function geChainStats() {
+    geChainStats: () => {
         return getInformationFromRandomSharder(Endpoints.GET_CHAIN_STATS, {}, (rawData) => {
             return new models.ChainStats(rawData)
         });
     },
 
-    getRecentFinalized: function getRecentFinalized() {
+    getRecentFinalized: () => {
         return getInformationFromRandomSharder(Endpoints.GET_RECENT_FINALIZED, {}, (rawData) => {
             var blocks = [];
             for (let bs of rawData) {
@@ -104,13 +108,13 @@ module.exports = {
         });
     },
 
-    getLatestFinalized: function getLatestFinalized() {
+    getLatestFinalized: () => {
         return getInformationFromRandomSharder(Endpoints.GET_LATEST_FINALIZED, {}, (rawData) => {
             return new models.BlockSummary(rawData)
         });
     },
 
-    getBlockInfoByHash: function getBlockInfoByHash(hash, options) {
+    getBlockInfoByHash: function getBlockInfoByHash(hash, options = this.BlockInfoOptions.HEADER) {
         const blockInfoOptions = this.BlockInfoOptions;
         return getInformationFromRandomSharder(Endpoints.GET_BLOCK_INFO, { block: hash, content: options }, (rawData) => {
             if (options == blockInfoOptions.HEADER) {
@@ -122,7 +126,7 @@ module.exports = {
 
     },
 
-    getBlockInfoByRound: function getBlockInfoByRound(round, options) {
+    getBlockInfoByRound: function getBlockInfoByRound(round, options = this.BlockInfoOptions.HEADER) {
         const blockInfoOptions = this.BlockInfoOptions;
         return getInformationFromRandomSharder(Endpoints.GET_BLOCK_INFO, { round: round, content: options }, (rawData) => {
             if (options == blockInfoOptions.HEADER) {
@@ -133,40 +137,95 @@ module.exports = {
         });
     },
 
-    getBalance: function getBalance(client_id) {
+    getBalance: (client_id) => {
         return getInformationFromRandomSharder(Endpoints.GET_BALANCE, { client_id: client_id });
     },
 
-    checkTransactionStatus: function checkTransactionStatus(hash) {
+    checkTransactionStatus: (hash) => {
         return getInformationFromRandomSharder(Endpoints.CHECK_TRANSACTION_STATUS, { hash: hash }, (rawData) => {
             return new models.TransactionDetail(rawData)
         });
     },
 
-    registerClient: function registerClient() {
+    registerClient: () => {
         const mnemonic = bip39.generateMnemonic()
         return createWallet(mnemonic);
     },
 
-    restoreWallet: function recoverWallet(mnemonic) {
+    restoreWallet: (mnemonic) => {
         return createWallet(mnemonic);
     },
 
-    storeData: function storeData(ae, payload) {
+    storeData: (ae, payload) => {
         const toClientId = "";
         return submitTransaction(ae, toClientId, 0, payload, TransactionType.DATA);
     },
 
-    sendTransaction: function sendTransaction(ae, toClientId, val, note) {
+    sendTransaction: (ae, toClientId, val, note) => {
         return submitTransaction(ae, toClientId, val, note, TransactionType.SEND);
     },
 
     //Smart contract address need to pass in toClientId
-    executeSmartContract: function executeSmartContract(ae, to_client_id, payload) {
+    executeSmartContract: (ae, to_client_id, payload) => {
         const toClientId = typeof to_client_id === "undefined" ? SmartContractAddress : to_client_id;
         const val = 0;
         return submitTransaction(ae, toClientId, val, payload, TransactionType.SMART_CONTRACT);
     },
+
+    allocateStorage: function allocateStorage(ae, num_writes, data_shards, parity_shards, size, expiration_date) {
+        const payload = {
+            name: "new_allocation_request",
+            input: {
+                num_writes: num_writes,
+                data_shards: data_shards,
+                parity_shards: parity_shards,
+                size: size,
+                expiration_date: expiration_date
+            }
+        }
+        return this.executeSmartContract(ae, undefined, JSON.stringify(payload));
+    },
+
+    getAllocationFilesFromPath: (allocation_id, blobber_list, path) => {
+
+        return new Promise(async function (resolve, reject) {
+
+            var blobber_url, data;
+            var files = [];
+    
+            for (let blobber of blobber_list) {
+                try {
+                    blobber_url = blobber + Endpoints.ALLOCATION_FILE_LIST + allocation_id;
+                    data = await sdk.utils.getReq(blobber_url, {path: path});
+    
+                    if (data.entries != null && data.entries.length > 0) {
+    
+                        for (let file_data of data.entries) {
+                            /* files not contains the element we're looking for so add */
+                            if (!files.some(e => e.LookupHash === file_data.LookupHash)) {
+                                files.push(file_data);
+                            }
+                        }
+                    }
+                }
+                catch (error) {
+                    console.log(error);
+                }
+            }
+            resolve(files);
+
+        });
+
+    },
+
+    getFileMetaDataFromBlobber: (allocation_id, blobber_url, path, fileName) => {
+        return sdk.utils.getReq(blobber_url + allocation_id, {path: path, filename: fileName});
+    },
+
+    getAllocationDirStructure: function () {
+
+    },
+
 
     Wallet: models.Wallet,
     ChainStats: models.ChainStats,
@@ -232,7 +291,7 @@ function createWallet(mnemonic) {
                 myaccount.entity.secretKey = sKey;
                 myaccount.entity.mnemonic = mnemonic;
                 var ae = new models.Wallet(myaccount.entity);
-                resolve(response);
+                resolve(ae);
             })
             .catch((error) => {
                 reject(error);
