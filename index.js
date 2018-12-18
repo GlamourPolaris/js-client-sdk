@@ -51,6 +51,7 @@ const TransactionType = {
 }
 
 const SmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7";
+const FaucetSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3";
 
 
 module.exports = {
@@ -172,10 +173,9 @@ module.exports = {
     },
 
     //Smart contract address need to pass in toClientId
-    executeSmartContract: (ae, to_client_id, payload) => {
+    executeSmartContract: (ae, to_client_id, payload, transactionValue = 0) => {
         const toClientId = typeof to_client_id === "undefined" ? SmartContractAddress : to_client_id;
-        const val = 0;
-        return submitTransaction(ae, toClientId, val, payload, TransactionType.SMART_CONTRACT);
+        return submitTransaction(ae, toClientId, transactionValue, payload, TransactionType.SMART_CONTRACT);
     },
 
     allocateStorage: function allocateStorage(ae, num_writes, data_shards, parity_shards, type, size, expiration_date) {
@@ -233,6 +233,15 @@ module.exports = {
 
     },
 
+    /** Faucets Apis */
+
+    executeFaucetSmartContract : function(ae,methodName, input, transactionValue) {
+        const payload = {
+            name: methodName,
+            input: input
+        }
+        return this.executeSmartContract(ae, FaucetSmartContractAddress, JSON.stringify(payload), transactionValue);
+    },
 
     Wallet: models.Wallet,
     ChainStats: models.ChainStats,

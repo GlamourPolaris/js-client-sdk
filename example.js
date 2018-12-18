@@ -26,28 +26,26 @@ var utils = require('./utils');
 
 var config = {
     miners: [
-        "http://m00.eddysc.testnet-0chain.net:7071/",
-        "http://m01.eddysc.testnet-0chain.net:7071/",
-        "http://m02.eddysc.testnet-0chain.net:7071/",
-        "http://m03.eddysc.testnet-0chain.net:7071/",
-        "http://m04.eddysc.testnet-0chain.net:7071/",
-        "http://m05.eddysc.testnet-0chain.net:7071/"
+        "http://m000.kennydev.testnet-0chain.net:7071/",
+        "http://m001.kennydev.testnet-0chain.net:7071/",
+        "http://m002.kennydev.testnet-0chain.net:7071/"
     ],
     sharders: [
-        "http://s00.eddysc.testnet-0chain.net:7171/",
-        "http://s01.eddysc.testnet-0chain.net:7171/"
+        "http://s000.kennydev.testnet-0chain.net:7171/"
     ],
-    clusterName: "eddysc"
+    clusterName: "Test"
 }
 
-//sdk.init(config);  // init with custom server configuration
+sdk.init(config);  // init with custom server configuration
 
-sdk.init(); // to use default local host servers
+//sdk.init(); // to use default local host servers
 //console.log(sdk.TransactionType);
-console.log(sdk.AllocationTypes);
 
 
+
+//Sample mnemonic
 //critic drop upper panther bean test arch announce problem put harsh flower
+
 var activeWallet = {};
 
 sdk.registerClient()
