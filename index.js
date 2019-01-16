@@ -35,7 +35,7 @@ const Endpoints = {
     GET_CHAIN_STATS: "v1/chain/get/stats",
     GET_BLOCK_INFO: "v1/block/get",
     CHECK_TRANSACTION_STATUS: "v1/transaction/get/confirmation",
-    GET_BALANCE: "v1/client/get/balance=",
+    GET_BALANCE: "v1/client/get/balance",
 
     //BLOBBER
     ALLOCATION_FILE_LIST: "/v1/file/list/",
