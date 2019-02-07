@@ -119,6 +119,66 @@ module.exports = {
         return JSONbig.parse(jsonString)
     },
 
+    getConsensusedInformationFromSharders: function(sharders,url, params, parser) {
+        const self = this;
+        return new Promise(function (resolve, reject) {
+
+            const urls = sharders.map(sharder => sharder + url);
+            const promises = urls.map(url => self.getReq(url, params));
+
+            PromiseAll.all(promises).then(function (result) {
+                const errors = result.reject.map(e => e.message);
+                // This is needed otherwise error will print big trace from axios
+                let consensusNo = ((sharders.length * 50) / 100)
+                if (result.resolve.length >= consensusNo ) {
+                    const hashedResponses = result.resolve.map(r => {
+                        console.log(r.data);
+                       return sha3.sha3_256(JSON.stringify(r.data))
+                    });
+
+                    let uniqueCounts = {};
+                    hashedResponses.forEach(function(x) { uniqueCounts[x] = (uniqueCounts[x] || 0)+1; });
+                    var maxResponses = {key:hashedResponses[0], val:uniqueCounts[hashedResponses[0]]} ;
+
+                    for (var key in uniqueCounts) {
+                        if (uniqueCounts.hasOwnProperty(key)) {
+                            if(maxResponses.val < uniqueCounts[key] ) {
+                                maxResponses = {key:key , val:uniqueCounts[key] } 
+                            }
+                        }
+                    }
+
+                    if(maxResponses.val >= consensusNo) {
+                        let responseIndex = hashedResponses.indexOf(maxResponses.key);
+                        let finalResponse = result.resolve[responseIndex].data;
+                        if (finalResponse) {
+                            const data = typeof parser !== "undefined" ? parser(finalResponse) : finalResponse;
+                            resolve(data);
+                        }
+                    }
+                    else {
+                        reject({ error: "Not enough consensus" });
+                    }
+                    //console.log("Response", result.resolve[0].data);
+                    //resolve({ data: result.resolve[0].data, error: errors })
+                                       
+                }
+                else {
+                    // return error here
+                    reject({ error: errors });
+                }
+            }, function (error) {
+                console.error("This should never happen", error);
+                reject({ error: error });
+            });
+
+
+        });
+
+
+
+    },
+
     doParallelPostReqToAllMiners: function (miners, url, postData) {
         const self = this;
         return new Promise(function (resolve, reject) {

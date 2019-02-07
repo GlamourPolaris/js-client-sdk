@@ -24,21 +24,51 @@ var utils = require('./utils');
 * Initializes 0chain js-client-sdk. Must be called once before calling SDK functions
 */
 
-var config = {
-    miners: [
-        "http://m000.kennydev.testnet-0chain.net:7071/",
-        "http://m001.kennydev.testnet-0chain.net:7071/",
-        "http://m002.kennydev.testnet-0chain.net:7071/"
-    ],
-    sharders: [
-        "http://s000.kennydev.testnet-0chain.net:7171/"
-    ],
-    clusterName: "Test"
-}
+// var config = {
+//     miners: [
+//         "http://m000.kennydev.testnet-0chain.net:7071/",
+//         "http://m001.kennydev.testnet-0chain.net:7071/",
+//         "http://m002.kennydev.testnet-0chain.net:7071/"
+//     ],
+//     sharders: [
+//         "http://s000.kennydev.testnet-0chain.net:7171/"
+//     ],
+//     clusterName: "Test"
+// }
 
-//sdk.init(config);  // init with custom server configuration
+// var config = {
+//     "miners": [
+//         "http://localhost:7071/",
+//         "http://localhost:7072/"
+//     ],
+//     "sharders": [
+//         "http://localhost:7171/"
+//     ],
+//     "transaction_timeout": 15,
+//     "clusterName": "local"
+// };
 
-sdk.init(); // to use default local host servers
+    var config = {
+      miners: [
+        'http://m000.jaydevstorage.testnet-0chain.net:7071/',
+        'http://m001.jaydevstorage.testnet-0chain.net:7071/',
+        'http://m002.jaydevstorage.testnet-0chain.net:7071/',
+      ],
+      sharders: ['http://s000.jaydevstorage.testnet-0chain.net:7171/'],
+      chain_id: 'jaydevstorage',
+      clusterName: 'jaydevstorage',
+      transaction_timeout: 15,
+      state: true,
+    };
+
+sdk.init(config);  // init with custom server configuration
+// sdk.geChainStats()
+//     .then((res) => {
+//         console.log("Response", res);
+//     })
+// return;
+
+// sdk.init(); // to use default local host servers
 //console.log(sdk.TransactionType);
 
 
@@ -51,14 +81,14 @@ var activeWallet = {};
 sdk.registerClient()
     .then((response) => {
         console.log("Client Registered Successfully ....");
+        activeWallet = response;
         return response;
     })
     .then(async (user) => {
-        activeWallet = user;
-        console.log("User ", user);
+        console.log("User", user);
         console.log("Waiting 3 seconds to submit data");
         await utils.sleep(3000);
-        return sdk.storeData(user, "My data...")
+        return sdk.storeData(activeWallet, "My data...")
     })
     .then(async (tx) => {
         console.log("Transaction posted Successfully ....", tx);
@@ -88,7 +118,11 @@ sdk.registerClient()
     })
     .then((scstate) => {
         console.log("SCSTATE", scstate);
+        return true;
     })
+    .then(() => {
+        return sdk.getBalance(activeWallet.id);
+    })    
     .catch((error) => {
         console.log("My Error", error)
     });

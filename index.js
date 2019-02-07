@@ -41,7 +41,7 @@ const Endpoints = {
 
     //BLOBBER
     ALLOCATION_FILE_LIST: "/v1/file/list/",
-    FILE_META: "/v1/file/meta/",
+    FILE_META: "/v1/file/meta/"
 }
 
 const TransactionType = {
@@ -147,13 +147,19 @@ module.exports = {
     },
 
     getBalance: (client_id) => {
-        return getInformationFromRandomSharder(Endpoints.GET_BALANCE, { client_id: client_id });
+        return utils.getConsensusedInformationFromSharders(sharders,Endpoints.GET_BALANCE,{ client_id: client_id });
+        // return getInformationFromRandomSharder(Endpoints.GET_BALANCE, { client_id: client_id });
     },
 
     checkTransactionStatus: (hash) => {
-        return getInformationFromRandomSharder(Endpoints.CHECK_TRANSACTION_STATUS, { hash: hash }, (rawData) => {
+
+        return utils.getConsensusedInformationFromSharders(sharders,Endpoints.CHECK_TRANSACTION_STATUS,{ hash: hash },(rawData) => {
             return new models.TransactionDetail(rawData)
         });
+
+        // return getInformationFromRandomSharder(Endpoints.CHECK_TRANSACTION_STATUS, { hash: hash }, (rawData) => {
+        //     return new models.TransactionDetail(rawData)
+        // });
     },
 
     registerClient: () => {
@@ -181,7 +187,8 @@ module.exports = {
     },
 
     getStorageSmartContractStateForKey: (keyName, keyvalue) => {
-        return getInformationFromRandomSharder(Endpoints.GET_SCSTATE, { key: keyName+":"+keyvalue, sc_address: StorageSmartContractAddress  });
+        return utils.getConsensusedInformationFromSharders(sharders,Endpoints.GET_SCSTATE,{ key: keyName+":"+keyvalue, sc_address: StorageSmartContractAddress  });
+        // return getInformationFromRandomSharder(Endpoints.GET_SCSTATE, { key: keyName+":"+keyvalue, sc_address: StorageSmartContractAddress  });
     },
 
     allocateStorage: function allocateStorage(ae, num_writes, data_shards, parity_shards, type, size, expiration_date) {
@@ -278,7 +285,6 @@ async function getInformationFromRandomSharder(url, params, parser) {
             try {
                 response = await utils.getReq(sharder + url, params); //sharder + url
                 //console.log("response from sharder",response.data);
-                console.log(response.status, response.statusText);
                 if (response.data) {
                     const data = typeof parser !== "undefined" ? parser(response.data) : response.data;
                     resolve(data);
