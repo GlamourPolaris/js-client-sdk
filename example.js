@@ -24,22 +24,24 @@ var utils = require('./utils');
 * Initializes 0chain js-client-sdk. Must be called once before calling SDK functions
 */
 
-// var config = {
-//     miners: [
-//         "http://m000.kennydev.testnet-0chain.net:7071/",
-//         "http://m001.kennydev.testnet-0chain.net:7071/",
-//         "http://m002.kennydev.testnet-0chain.net:7071/"
-//     ],
-//     sharders: [
-//         "http://s000.kennydev.testnet-0chain.net:7171/"
-//     ],
-//     clusterName: "Test"
-// }
+var config = {
+    miners: [
+      'http://m000.jaydevstorage.testnet-0chain.net:7071/',
+      'http://m001.jaydevstorage.testnet-0chain.net:7071/',
+      'http://m002.jaydevstorage.testnet-0chain.net:7071/',
+    ],
+    sharders: ['http://s000.jaydevstorage.testnet-0chain.net:7171/'],
+    chain_id: 'jaydevstorage',
+    clusterName: 'jaydevstorage',
+    transaction_timeout: 15,
+    state: true,
+  };
 
 // var config = {
 //     "miners": [
 //         "http://localhost:7071/",
-//         "http://localhost:7072/"
+//         "http://localhost:7072/",
+//         "http://localhost:7073/"
 //     ],
 //     "sharders": [
 //         "http://localhost:7171/"
@@ -48,18 +50,18 @@ var utils = require('./utils');
 //     "clusterName": "local"
 // };
 
-    var config = {
-      miners: [
-        'http://m000.jaydevstorage.testnet-0chain.net:7071/',
-        'http://m001.jaydevstorage.testnet-0chain.net:7071/',
-        'http://m002.jaydevstorage.testnet-0chain.net:7071/',
-      ],
-      sharders: ['http://s000.jaydevstorage.testnet-0chain.net:7171/'],
-      chain_id: 'jaydevstorage',
-      clusterName: 'jaydevstorage',
-      transaction_timeout: 15,
-      state: true,
-    };
+    // var config = {
+    //   miners: [
+    //     'http://m000.jaydevstorage.testnet-0chain.net:7071/',
+    //     'http://m001.jaydevstorage.testnet-0chain.net:7071/',
+    //     'http://m002.jaydevstorage.testnet-0chain.net:7071/',
+    //   ],
+    //   sharders: ['http://s000.jaydevstorage.testnet-0chain.net:7171/'],
+    //   chain_id: 'jaydevstorage',
+    //   clusterName: 'jaydevstorage',
+    //   transaction_timeout: 15,
+    //   state: true,
+    // };
 
 sdk.init(config);  // init with custom server configuration
 // sdk.geChainStats()
@@ -84,19 +86,20 @@ sdk.registerClient()
         activeWallet = response;
         return response;
     })
-    .then(async (user) => {
-        console.log("User", user);
-        console.log("Waiting 3 seconds to submit data");
-        await utils.sleep(3000);
-        return sdk.storeData(activeWallet, "My data...")
-    })
-    .then(async (tx) => {
-        console.log("Transaction posted Successfully ....", tx);
-        console.log("Waiting 3 seconds to submit data");
-        await utils.sleep(3000);
-        return sdk.checkTransactionStatus(tx.hash)
-    })
-    .then((txDetail) => {
+    // .then(async (user) => {
+    //     console.log("User", user);
+    //     console.log("Waiting 3 seconds to submit data");
+    //     await utils.sleep(3000);
+    //     return sdk.storeData(activeWallet, "My data...")
+    // })
+    // .then(async (tx) => {
+    //     console.log("Transaction posted Successfully ....", tx);
+    //     console.log("Waiting 3 seconds to submit data");
+    //     await utils.sleep(3000);
+    //     return sdk.checkTransactionStatus(tx.hash)
+    // })
+    .then(async (txDetail) => {
+         await utils.sleep(3000);
         console.log("txDetail ", txDetail);
         console.log("Allocating storage .......")
         return sdk.allocateStorage(activeWallet,10000,2,1,sdk.AllocationTypes.FREE,1*1024*1024*1024,new Date(new Date().setFullYear(new Date().getFullYear() + 1)).getTime())
@@ -109,16 +112,18 @@ sdk.registerClient()
     })
     .then((txDetail) => {
         console.log("Allocation transaction detail ", txDetail);
-        return JSON.parse(txDetail.transaction.transaction_output)
+        console.log("Active User", activeWallet);
+         return JSON.parse(txDetail.transaction.transaction_output)
     })
     .then(async (allocationInfo) => {
         console.log("Allocation", allocationInfo);
         await utils.sleep(1000);    
-        return sdk.getStorageSmartContractStateForKey("allocation",allocationInfo.id);
+        return sdk.allocationInfo(allocationInfo.id);
+        //return sdk.getStorageSmartContractStateForKey("allocation",allocationInfo.id);
     })
     .then((scstate) => {
         console.log("SCSTATE", scstate);
-        return true;
+        // return true;
     })
     .then(() => {
         return sdk.getBalance(activeWallet.id);

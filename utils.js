@@ -129,7 +129,7 @@ module.exports = {
             PromiseAll.all(promises).then(function (result) {
                 const errors = result.reject.map(e => e.message);
                 // This is needed otherwise error will print big trace from axios
-                let consensusNo = ((sharders.length * 50) / 100)
+                let consensusNo = ((sharders.length * 50) / 100);
                 if (result.resolve.length >= consensusNo ) {
                     const hashedResponses = result.resolve.map(r => {
                         console.log(r.data);
@@ -151,6 +151,7 @@ module.exports = {
                     if(maxResponses.val >= consensusNo) {
                         let responseIndex = hashedResponses.indexOf(maxResponses.key);
                         let finalResponse = result.resolve[responseIndex].data;
+                        console.log("Final response", finalResponse);
                         if (finalResponse) {
                             const data = typeof parser !== "undefined" ? parser(finalResponse) : finalResponse;
                             resolve(data);

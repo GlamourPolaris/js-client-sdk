@@ -26,6 +26,10 @@ var models = require('./models');
 
 var miners, sharders, clusterName, version;
 
+const StorageSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7";
+const FaucetSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3";
+
+
 const Endpoints = {
     REGISTER_CLIENT: 'v1/client/put',
     PUT_TRANSACTION: 'v1/transaction/put',
@@ -38,6 +42,10 @@ const Endpoints = {
     GET_BALANCE: "v1/client/get/balance",
 
     GET_SCSTATE: "v1/scstate/get",
+    
+    // SC REST
+    SC_REST : "v1/screst/",
+    SC_REST_ALLOCATION: "v1/screst/"+StorageSmartContractAddress+"/allocation",
 
     //BLOBBER
     ALLOCATION_FILE_LIST: "/v1/file/list/",
@@ -51,10 +59,6 @@ const TransactionType = {
     // STORAGE_READ  : 103,// A transaction to read data from the blobber
     SMART_CONTRACT: 1000 // A smart contract transaction type
 }
-
-const StorageSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7";
-const FaucetSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3";
-
 
 module.exports = {
 
@@ -204,6 +208,10 @@ module.exports = {
             }
         }
         return this.executeSmartContract(ae, undefined, JSON.stringify(payload));
+    },
+
+    allocationInfo: function allocationInfo(id){
+        return utils.getConsensusedInformationFromSharders(sharders,Endpoints.SC_REST_ALLOCATION ,{ allocation: id });
     },
 
     getAllocationFilesFromPath: (allocation_id, blobber_list, path) => {
