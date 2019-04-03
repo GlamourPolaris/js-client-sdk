@@ -171,6 +171,10 @@ module.exports = {
         return createWallet(mnemonic);
     },
 
+    validateMnemonic: (mnemonic) => {
+        return bip39.validateMnemonic(mnemonic)
+    },
+
     restoreWallet: (mnemonic) => {
         return createWallet(mnemonic);
     },
