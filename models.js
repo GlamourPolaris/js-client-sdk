@@ -129,6 +129,8 @@ module.exports = {
         this.round_random_seed = data.round_random_seed;
         this.merkle_tree_root = data.merkle_tree_root;
         this.merkle_tree_path = new module.exports.merkle_tree_path(data.merkle_tree_path);
+        this.receipt_merkle_tree_root = data.receipt_merkle_tree_root;
+        this.receipt_merkle_tree_path = new module.exports.merkle_tree_path(data.receipt_merkle_tree_path);
     },
 
     merkle_tree_path: function merkle_tree_path(data) {
