@@ -49,6 +49,7 @@ module.exports = {
         this.merkle_tree_root = data.merkle_tree_root;
         this.state_hash = data.state_hash;
         this.receipt_merkle_tree_root = data.receipt_merkle_tree_root;
+        this.num_txns = data.num_txns;
     },
 
     Block: function Block(data) {
