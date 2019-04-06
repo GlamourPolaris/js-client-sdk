@@ -25,7 +25,6 @@ const PromiseAll = require('promises-all');
 module.exports = {
     byteToHexString: function byteToHexString(uint8arr) {
         if (!uint8arr) {
-            console.log("byteToHexString returning empty")
             return '';
         }
         var hexStr = '';
@@ -41,7 +40,6 @@ module.exports = {
 
     hexStringToByte: function hexStringToByte(str) {
         if (!str) {
-            console.log("HexStringToByte returning empty array")
             return new Uint8Array();
         }
         var a = [];
@@ -132,7 +130,6 @@ module.exports = {
                 let consensusNo = ((sharders.length * 50) / 100);
                 if (result.resolve.length >= consensusNo ) {
                     const hashedResponses = result.resolve.map(r => {
-                        console.log(r.data);
                        return sha3.sha3_256(JSON.stringify(r.data))
                     });
 
@@ -151,7 +148,6 @@ module.exports = {
                     if(maxResponses.val >= consensusNo) {
                         let responseIndex = hashedResponses.indexOf(maxResponses.key);
                         let finalResponse = result.resolve[responseIndex].data;
-                        console.log("Final response", finalResponse);
                         if (finalResponse) {
                             const data = typeof parser !== "undefined" ? parser(finalResponse) : finalResponse;
                             resolve(data);
@@ -186,8 +182,6 @@ module.exports = {
             const urls = miners.map(miner => miner + url);
             const promises = urls.map(url => self.postReq(url, postData));
             PromiseAll.all(promises).then(function (result) {
-                console.log("result", result.resolve.length);
-                console.log("Error", result.reject.length);
                 // This is needed otherwise error will print big trace from axios
                 const errors = result.reject.map(e => e.message);
                 if (result.resolve.length === 0) {
@@ -200,7 +194,6 @@ module.exports = {
                     resolve(result.resolve[0].data);
                 }
             }, function (error) {
-                console.error("This should never happen", error);
                 reject({ error: error });
             });
 

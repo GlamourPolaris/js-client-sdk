@@ -241,7 +241,7 @@ module.exports = {
                     }
                 }
                 catch (error) {
-                    console.log(error);
+                    // console.log(error);
                 }
             }
             resolve(files);
@@ -304,11 +304,9 @@ async function getInformationFromRandomSharder(url, params, parser) {
                 }
             }
             catch (error) {
-                console.log("Error from sharder", error.text);
                 errResp.push({ "sharder": sharder, "error": error });
             }
         }
-        console.log("Error response", errResp);
         reject(errResp);
     });
 

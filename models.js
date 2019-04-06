@@ -46,6 +46,7 @@ module.exports = {
         this.hash = data.hash;
         this.round = data.round;
         this.round_random_seed = data.round_random_seed;
+        this.miner_id = data.miner_id;
         this.merkle_tree_root = data.merkle_tree_root;
         this.state_hash = data.state_hash;
         this.receipt_merkle_tree_root = data.receipt_merkle_tree_root;
