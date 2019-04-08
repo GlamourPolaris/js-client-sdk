@@ -38,6 +38,7 @@ module.exports = {
         this.rate_5_min = data.rate_5_min;
         this.rate_mean = data.rate_mean;
         this.std_dev = data.std_dev;
+        this.total_txns = data.total_txns;
     },
 
     BlockSummary: function BlockSummary(data) {
