@@ -151,7 +151,22 @@ module.exports = {
     },
 
     getBalance: (client_id) => {
-        return utils.getConsensusedInformationFromSharders(sharders,Endpoints.GET_BALANCE,{ client_id: client_id });
+        return new Promise(async function (resolve, reject) {
+            utils.getConsensusedInformationFromSharders(sharders,Endpoints.GET_BALANCE,{ client_id: client_id })
+            .then((res) => {
+                resolve(res);
+            })
+            .catch((error) => {
+                if(error.error === "value not present") {
+                    resolve({
+                        balance: 0
+                    })
+                }
+                else {
+                    reject(error);
+                }
+            })
+        });
         // return getInformationFromRandomSharder(Endpoints.GET_BALANCE, { client_id: client_id });
     },
 

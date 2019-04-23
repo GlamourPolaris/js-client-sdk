@@ -22,6 +22,44 @@ var JSONbig = require('json-bigint');
 const axios = require('axios');
 const PromiseAll = require('promises-all');
 
+// This will return null if not enough consensus , otherwise will return max voted response
+const getConsensusMessageFromResponse = function(hashedResponses, consensusNo, responseArray) {
+
+    let uniqueCounts = {};
+    hashedResponses.forEach(function(x) { uniqueCounts[x] = (uniqueCounts[x] || 0)+1; });
+    var maxResponses = {key:hashedResponses[0], val:uniqueCounts[hashedResponses[0]]} ;
+
+    for (var key in uniqueCounts) {
+        if (uniqueCounts.hasOwnProperty(key)) {
+            if(maxResponses.val < uniqueCounts[key] ) {
+                maxResponses = {key:key , val:uniqueCounts[key] } 
+            }
+        }
+    }
+
+    if(maxResponses.val >= consensusNo) {
+        let responseIndex = hashedResponses.indexOf(maxResponses.key);
+        return responseArray[responseIndex];
+        // console.log("responseIndex => ", responseIndex);
+        // let finalResponse = responseArray[responseIndex].data;
+        // console.log("response => ", responseArray[responseIndex]);
+        // console.log("Final response =>", finalResponse);
+        // if (finalResponse) {
+        //     console.log("parser => ", parser);
+        //     const data = typeof parser !== "undefined" ? parser(finalResponse) : finalResponse;
+        //     return data;
+        // }
+    }
+    else {
+        return null;
+    }
+}
+
+const parseConsensusMessage = function(finalResponse, parser) {
+    const data = typeof parser !== "undefined" ? parser(finalResponse) : finalResponse;
+    return data;
+}
+
 module.exports = {
     byteToHexString: function byteToHexString(uint8arr) {
         if (!uint8arr) {
@@ -117,6 +155,8 @@ module.exports = {
         return JSONbig.parse(jsonString)
     },
 
+    getConsensusMessageFromResponse: getConsensusMessageFromResponse, 
+
     getConsensusedInformationFromSharders: function(sharders,url, params, parser) {
         const self = this;
         return new Promise(function (resolve, reject) {
@@ -125,7 +165,7 @@ module.exports = {
             const promises = urls.map(url => self.getReq(url, params));
 
             PromiseAll.all(promises).then(function (result) {
-                const errors = result.reject.map(e => e.message);
+                // console.log("result.reject", result.reject);
                 // This is needed otherwise error will print big trace from axios
                 let consensusNo = ((sharders.length * 50) / 100);
                 if (result.resolve.length >= consensusNo ) {
@@ -133,47 +173,65 @@ module.exports = {
                        return sha3.sha3_256(JSON.stringify(r.data))
                     });
 
-                    let uniqueCounts = {};
-                    hashedResponses.forEach(function(x) { uniqueCounts[x] = (uniqueCounts[x] || 0)+1; });
-                    var maxResponses = {key:hashedResponses[0], val:uniqueCounts[hashedResponses[0]]} ;
-
-                    for (var key in uniqueCounts) {
-                        if (uniqueCounts.hasOwnProperty(key)) {
-                            if(maxResponses.val < uniqueCounts[key] ) {
-                                maxResponses = {key:key , val:uniqueCounts[key] } 
-                            }
-                        }
-                    }
-
-                    if(maxResponses.val >= consensusNo) {
-                        let responseIndex = hashedResponses.indexOf(maxResponses.key);
-                        let finalResponse = result.resolve[responseIndex].data;
-                        if (finalResponse) {
-                            const data = typeof parser !== "undefined" ? parser(finalResponse) : finalResponse;
-                            resolve(data);
-                        }
-                    }
-                    else {
+                    const consensusResponse = getConsensusMessageFromResponse(hashedResponses, consensusNo, result.resolve);
+                    if(consensusResponse === null) {
                         reject({ error: "Not enough consensus" });
                     }
+                    else {
+                        resolve(parseConsensusMessage(consensusResponse.data, parser));
+                    }
+
+                    // let uniqueCounts = {};
+                    // hashedResponses.forEach(function(x) { uniqueCounts[x] = (uniqueCounts[x] || 0)+1; });
+                    // var maxResponses = {key:hashedResponses[0], val:uniqueCounts[hashedResponses[0]]} ;
+
+                    // for (var key in uniqueCounts) {
+                    //     if (uniqueCounts.hasOwnProperty(key)) {
+                    //         if(maxResponses.val < uniqueCounts[key] ) {
+                    //             maxResponses = {key:key , val:uniqueCounts[key] } 
+                    //         }
+                    //     }
+                    // }
+
+                    // if(maxResponses.val >= consensusNo) {
+                    //     let responseIndex = hashedResponses.indexOf(maxResponses.key);
+                    //     let finalResponse = result.resolve[responseIndex].data;
+                    //     if (finalResponse) {
+                    //         const data = typeof parser !== "undefined" ? parser(finalResponse) : finalResponse;
+                    //         resolve(data);
+                    //     }
+                    // }
+                    // else {
+                    //     reject({ error: "Not enough consensus" });
+                    // }
                     //console.log("Response", result.resolve[0].data);
                     //resolve({ data: result.resolve[0].data, error: errors })
                                        
                 }
                 else {
+                    const errors = result.reject.map(e => {
+                        if(e.response.status === 400 && e.response.data !== undefined) {
+                            return sha3.sha3_256(JSON.stringify(e.response.data))
+                        }
+                        else{
+                            return e.message
+                        }
+                    });
+                    const consensusErrorResponse = getConsensusMessageFromResponse(errors, consensusNo, result.reject, undefined);
+                    if(consensusErrorResponse === null) {
+                        reject({ error: "Not enough consensus" });
+                    }
+                    else {
+                        reject(parseConsensusMessage(consensusErrorResponse.response.data));
+                    }
                     // return error here
-                    reject({ error: errors });
+                    // reject({ error: errors });
                 }
             }, function (error) {
                 console.error("This should never happen", error);
                 reject({ error: error });
             });
-
-
         });
-
-
-
     },
 
     doParallelPostReqToAllMiners: function (miners, url, postData) {
