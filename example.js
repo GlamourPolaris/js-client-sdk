@@ -25,51 +25,23 @@ var utils = require('./utils');
 */
 
 var config = {
-    miners: [
-      'http://m000.jaydevstorage.testnet-0chain.net:7071/',
-      'http://m001.jaydevstorage.testnet-0chain.net:7071/',
-      'http://m002.jaydevstorage.testnet-0chain.net:7071/',
+    "miners" : [
+        "http://virb.devb.testnet-0chain.net:7071/",
+        "http://vira.devb.testnet-0chain.net:7071/",
+        "http://cala.devb.testnet-0chain.net:7071/",
+        "http://calb.devb.testnet-0chain.net:7071/"  
     ],
-    sharders: ['http://s000.jaydevstorage.testnet-0chain.net:7171/'],
-    chain_id: 'jaydevstorage',
-    clusterName: 'jaydevstorage',
-    transaction_timeout: 15,
-    state: true,
+    "sharders" : [
+        "http://cala.devb.testnet-0chain.net:7171/",
+        "http://vira.devb.testnet-0chain.net:7171/"  
+    ],
+    "chain_id" :   "0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe",
+    "clusterName" : "devb",
+    "transaction_timeout" : 20,
+    "state " : true
   };
 
-// var config = {
-//     "miners": [
-//         "http://localhost:7071/",
-//         "http://localhost:7072/",
-//         "http://localhost:7073/"
-//     ],
-//     "sharders": [
-//         "http://localhost:7171/"
-//     ],
-//     "transaction_timeout": 15,
-//     "clusterName": "local"
-// };
-
-    // var config = {
-    //   miners: [
-    //     'http://m000.jaydevstorage.testnet-0chain.net:7071/',
-    //     'http://m001.jaydevstorage.testnet-0chain.net:7071/',
-    //     'http://m002.jaydevstorage.testnet-0chain.net:7071/',
-    //   ],
-    //   sharders: ['http://s000.jaydevstorage.testnet-0chain.net:7171/'],
-    //   chain_id: 'jaydevstorage',
-    //   clusterName: 'jaydevstorage',
-    //   transaction_timeout: 15,
-    //   state: true,
-    // };
-
 sdk.init(config);  // init with custom server configuration
-// sdk.geChainStats()
-//     .then((res) => {
-//         console.log("Response", res);
-//     })
-// return;
-
 // sdk.init(); // to use default local host servers
 //console.log(sdk.TransactionType);
 
@@ -80,78 +52,82 @@ sdk.init(config);  // init with custom server configuration
 
 var activeWallet = {};
 
-sdk.registerClient()
+
+sdk.geChainStats()
+    .then((chainStats) => {
+        print("chainStats", chainStats);
+        return sdk.getLatestFinalized();
+    })
+    .then((latestBlock) => {
+        print("latestBlock", latestBlock);
+        return sdk.getRecentFinalized();
+    })
+    .then((recentBlocks) => {
+        print("recentBlocks", recentBlocks);
+        return sdk.getBlockInfoByRound(100);
+    })
+    .then((hundredblock) => {
+        print("100th block", hundredblock);
+        return sdk.registerClient();
+    })
     .then((response) => {
-        console.log("Client Registered Successfully ....");
         activeWallet = response;
+        print("wallet", activeWallet);
         return response;
     })
-    // .then(async (user) => {
-    //     console.log("User", user);
-    //     console.log("Waiting 3 seconds to submit data");
-    //     await utils.sleep(3000);
-    //     return sdk.storeData(activeWallet, "My data...")
-    // })
-    // .then(async (tx) => {
-    //     console.log("Transaction posted Successfully ....", tx);
-    //     console.log("Waiting 3 seconds to submit data");
-    //     await utils.sleep(3000);
-    //     return sdk.checkTransactionStatus(tx.hash)
-    // })
+    .then(() => {
+        return sdk.getBalance(activeWallet.id)
+    })
+    .then(async (balance) => {
+        print("My Balance", balance);
+        return sdk.storeData(activeWallet, "My data...")
+    })
+    .then(async (tx) => {
+        console.log("Transaction posted Successfully ....", tx.hash);
+        console.log("Waiting 3 seconds to transaction status");
+        await utils.sleep(3000);
+        return sdk.checkTransactionStatus(tx.hash)
+    })
     .then(async (txDetail) => {
-         await utils.sleep(3000);
-        console.log("txDetail ", txDetail);
+        await utils.sleep(3000);
+        print("txDetail ", txDetail);
         console.log("Allocating storage .......")
-        return sdk.allocateStorage(activeWallet,10000,2,1,sdk.AllocationTypes.FREE,1*1024*1024*1024,new Date(new Date().setFullYear(new Date().getFullYear() + 1)).getTime())
+        return sdk.allocateStorage(activeWallet, 10000, 2, 1, sdk.AllocationTypes.FREE, 1 * 1024 * 1024 * 1024, new Date(new Date().setFullYear(new Date().getFullYear() + 1)).getTime())
     }).
     then(async (tx) => {
-        console.log("Allocation Transaction posted Successfully ....", tx);
-        console.log("Waiting 3 seconds to submit data");
-        await utils.sleep(3000);        
+        console.log("Waiting 3 seconds to transaction status");
+        await utils.sleep(3000);
         return sdk.checkTransactionStatus(tx.hash)
     })
     .then((txDetail) => {
-        console.log("Allocation transaction detail ", txDetail);
-        console.log("Active User", activeWallet);
-         return JSON.parse(txDetail.transaction.transaction_output)
+        print("Allocation transaction detail ", txDetail);
+        return JSON.parse(txDetail.transaction.transaction_output)
     })
     .then(async (allocationInfo) => {
-        console.log("Allocation", allocationInfo);
-        await utils.sleep(1000);    
+        print("Allocation", allocationInfo);
+        await utils.sleep(3000);
         return sdk.allocationInfo(allocationInfo.id);
-        //return sdk.getStorageSmartContractStateForKey("allocation",allocationInfo.id);
     })
-    .then((scstate) => {
-        console.log("SCSTATE", scstate);
-        // return true;
-    })
-    .then(() => {
+    .then((allocationInfo) => {
+        print("allocationInfo", allocationInfo);
         return sdk.getBalance(activeWallet.id);
-    })    
+    })
+    .then((mybalance) => {
+        print("My Balance", mybalance);
+    })
     .catch((error) => {
         console.log("My Error", error)
     });
 
+    function print(msg,data) {
+        console.log("===============================================");
+        console.log(msg,data);
+        console.log("===============================================");
+    }
 
-    
-    return;
 
-    //Chain API Test
 
-    // sdk.geChainStats()
-    //     .then((chainStats) => {
-    //         console.log("chainStats", chainStats);
-    //         return sdk.getLatestFinalized();
-    //     })
-    //     .then((latestBlock) => {
-    //         console.log("latestBlock", latestBlock);
-    //         return sdk.getRecentFinalized();
-    //     })
-    //     .then((recentBlocks) => {
-    //         console.log("recentBlocks", recentBlocks);
-    //         return sdk.getBlockInfoByRound(100);
-    //     })
-    //     .then((hundredblock) => {
-    //         console.log("hundredblock", hundredblock);
-    //     })
+
+
+
 

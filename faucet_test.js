@@ -22,39 +22,25 @@ var utils = require('./utils');
 /*
 * Initializes 0chain js-client-sdk. Must be called once before calling SDK functions
 */
-
-// var config = {
-//     miners: [
-//         "http://m000.kennydev.testnet-0chain.net:7071/",
-//         "http://m001.kennydev.testnet-0chain.net:7071/",
-//         "http://m002.kennydev.testnet-0chain.net:7071/"
-//     ],
-//     sharders: [
-//         "http://s000.kennydev.testnet-0chain.net:7171/"
-//     ],
-//     clusterName: "Test"
-// }
-
 var config = {
-      miners: [
-        'http://m000.jaydevstorage.testnet-0chain.net:7071/',
-        'http://m001.jaydevstorage.testnet-0chain.net:7071/',
-        'http://m002.jaydevstorage.testnet-0chain.net:7071/',
-      ],
-      sharders: ['http://s000.jaydevstorage.testnet-0chain.net:7171/'],
-      chain_id: 'jaydevstorage',
-      clusterName: 'jaydevstorage',
-      transaction_timeout: 15,
-      state: true,
-    };
+    "miners" : [
+        "http://virb.devb.testnet-0chain.net:7071/",
+        "http://vira.devb.testnet-0chain.net:7071/",
+        "http://cala.devb.testnet-0chain.net:7071/",
+        "http://calb.devb.testnet-0chain.net:7071/"  
+    ],
+    "sharders" : [
+        "http://cala.devb.testnet-0chain.net:7171/",
+        "http://vira.devb.testnet-0chain.net:7171/"  
+    ],
+    "chain_id" :   "0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe",
+    "clusterName" : "devb",
+    "transaction_timeout" : 20,
+    "state " : true
+  };
 
 sdk.init(config);  // init with custom server configuration
 
-//sdk.init(); // to use default local host servers
-
-// var sample_mnemonic = "odor blade arrive appear puppy approve wage allow youth zoo demise duck";
-// var sample_mnemonic =  "muffin method have vacuum coral illness wood vicious ostrich mango excite true" ;
-// var sample_mnemonic = "glow length interest wrestle crowd girl bridge erode bind sister bread rug"
 var sample_mnemonic = "boil miss will hundred prefer jungle evil hamster tenant assume ghost harsh";
 let activeClient = {};
 
@@ -67,7 +53,7 @@ sdk.restoreWallet(sample_mnemonic)
     .then(async (client) => {
         console.log("Waiting 3 seconds ....", client);
         await utils.sleep(3000);
-        return sdk.executeFaucetSmartContract(client, "pour", {}, 10 * ( 10 ** 10));
+        return sdk.executeFaucetSmartContract(client, "pour", {}, 10 * (10 ** 10));
     })
     .then(async (pour_tx) => {
         console.log("Waiting 3 seconds ....", pour_tx);
@@ -85,7 +71,7 @@ sdk.restoreWallet(sample_mnemonic)
     })
     .then((balance) => {
         console.log("balance", balance);
-    })    
+    })
     .catch((error) => {
         console.log("My Error", error)
     });    
