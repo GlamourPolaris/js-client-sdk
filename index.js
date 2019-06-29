@@ -18,6 +18,7 @@
 const nacl = require('tweetnacl');
 const sha3 = require('js-sha3');
 const bip39 = require('bip39');
+var BlueBirdPromise = require("bluebird");
 
 //local import 
 const utils = require('./utils');
@@ -307,22 +308,40 @@ async function getInformationFromRandomSharder(url, params, parser) {
     var errResp = [];
 
     return new Promise(async (resolve, reject) => {
-        for (let sharder of utils.shuffleArray(sharders)) {
-            //console.log("Calling sharder .....", sharder)
-            try {
-                response = await utils.getReq(sharder + url, params); //sharder + url
-                //console.log("response from sharder",response.data);
-                if (response.data) {
-                    const data = typeof parser !== "undefined" ? parser(response.data) : response.data;
+        const urls = sharders.map(sharder => sharder + url);
+        const promises = urls.map(url => utils.getReq(url, params));
+        BlueBirdPromise.some(promises, 1)
+            .then(function (result) {
+                console.log("My data", result);
+                if (result[0].data) {
+                    const data = typeof parser !== "undefined" ? parser(result[0].data) : result[0].data;
                     resolve(data);
-                    break;
                 }
-            }
-            catch (error) {
-                errResp.push({ "sharder": sharder, "error": error });
-            }
-        }
-        reject(errResp);
+            })
+            .catch(BlueBirdPromise.AggregateError, function (err) {
+                reject({ error: err[0].code });
+                // err.forEach(function (e) {
+                //     console.error(e.stack);
+                // });
+            });
+
+
+        // for (let sharder of utils.shuffleArray(sharders)) {
+        //     //console.log("Calling sharder .....", sharder)
+        //     try {
+        //         response = await utils.getReq(sharder + url, params); //sharder + url
+        //         //console.log("response from sharder",response.data);
+        //         if (response.data) {
+        //             const data = typeof parser !== "undefined" ? parser(response.data) : response.data;
+        //             resolve(data);
+        //             break;
+        //         }
+        //     }
+        //     catch (error) {
+        //         errResp.push({ "sharder": sharder, "error": error });
+        //     }
+        // }
+        // reject(errResp);
     });
 
 }
