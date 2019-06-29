@@ -41,9 +41,36 @@ var config = {
     "state " : true
   };
 
+//   var config = {
+//     "miners": [
+//       "http://m000.ruby.alphanet-0chain.net:7071/",
+//       "http://m001.ruby.alphanet-0chain.net:7071/",
+//       "http://m002.ruby.alphanet-0chain.net:7071/",
+//       "http://m003.ruby.alphanet-0chain.net:7071/",
+//       "http://m004.ruby.alphanet-0chain.net:7071/",
+//       "http://m005.ruby.alphanet-0chain.net:7071/",
+//       "http://m006.ruby.alphanet-0chain.net:7071/",
+//       "http://m007.ruby.alphanet-0chain.net:7071/",
+//       "http://m008.ruby.alphanet-0chain.net:7071/",
+//       "http://m009.ruby.alphanet-0chain.net:7071/"
+//     ],
+//     "sharders": [
+//       "http://s000.ruby.alphanet-0chain.net:7171/",
+//       "http://s001.ruby.alphanet-0chain.net:7171/",
+//       "http://s002.ruby.alphanet-0chain.net:7171/",
+//       "http://s003.ruby.alphanet-0chain.net:7171/"
+//     ],
+//     "chain_id": "devb",
+//     "clusterName": "devb",
+//     "transaction_timeout": 15,
+//     "state": true
+//   }
+
 sdk.init(config);  // init with custom server configuration
 // sdk.init(); // to use default local host servers
 //console.log(sdk.TransactionType);
+
+
 
 
 
