@@ -167,7 +167,7 @@ module.exports = {
             PromiseAll.all(promises).then(function (result) {
                 // console.log("result.reject", result.reject);
                 // This is needed otherwise error will print big trace from axios
-                let consensusNo = ((sharders.length * 50) / 100);
+                let consensusNo = ((sharders.length * 20) / 100);
                 if (result.resolve.length >= consensusNo ) {
                     const hashedResponses = result.resolve.map(r => {
                        return sha3.sha3_256(JSON.stringify(r.data))

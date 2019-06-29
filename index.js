@@ -105,7 +105,7 @@ module.exports = {
         return "version: " + version + " cluster: " + clusterName;
     },
 
-    geChainStats: () => {
+    getChainStats: () => {
         return getInformationFromRandomSharder(Endpoints.GET_CHAIN_STATS, {}, (rawData) => {
             return new models.ChainStats(rawData)
         });

@@ -34,7 +34,7 @@ var config = {
     "sharders" : [
         "http://cala.devb.testnet-0chain.net:7171/",
         "http://vira.devb.testnet-0chain.net:7171/"  
-    ],
+    ],   
     "chain_id" :   "0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe",
     "clusterName" : "devb",
     "transaction_timeout" : 20,
@@ -53,7 +53,7 @@ sdk.init(config);  // init with custom server configuration
 var activeWallet = {};
 
 
-sdk.geChainStats()
+sdk.getChainStats()
     .then((chainStats) => {
         print("chainStats", chainStats);
         return sdk.getLatestFinalized();
@@ -76,8 +76,23 @@ sdk.geChainStats()
         return response;
     })
     .then(() => {
-        return sdk.getBalance(activeWallet.id)
+        return sdk.getBalance(activeWallet.id);
     })
+    .then(async (balance) => {
+        print("My Balance", balance);
+        await utils.sleep(3000);
+        console.log("Request faucet token");
+        return sdk.executeFaucetSmartContract(activeWallet, "pour", {}, 10 * (10 ** 10));
+    })
+    .then(async (pour_tx) => {
+        console.log("Waiting 3 seconds .... to get faucet transaction detail");
+        await utils.sleep(3000);
+        return sdk.checkTransactionStatus(pour_tx.hash);
+    })
+    .then((pour_tx_detail) => {
+        print("faucet tx detail", pour_tx_detail);
+        return sdk.getBalance(activeWallet.id);
+    })    
     .then(async (balance) => {
         print("My Balance", balance);
         return sdk.storeData(activeWallet, "My data...")
@@ -121,7 +136,7 @@ sdk.geChainStats()
 
     function print(msg,data) {
         console.log("===============================================");
-        console.log(msg,data);
+        console.log(msg + " => " , data);
         console.log("===============================================");
     }
 
