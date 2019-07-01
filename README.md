@@ -42,7 +42,7 @@ var config = {
 }
 jsClientSdk.init(config)
 ```
-##getChainStats
+## getChainStats
 
 This function can be used to get the statistics of the the blockchain (like Current roundnumber, avg block generation time, total_txns etc ..).
 
@@ -52,7 +52,7 @@ This function returns a **ChainStats** object in case of successful promise reso
 jsClientSdk.getChainStats()
 ```
 
-##getLatestFinalized
+## getLatestFinalized
 
 This function can be used to get the last finalized block summary.
 
@@ -62,7 +62,7 @@ This function returns a **BlockSummary** object in case of successful promise re
 jsClientSdk.getLatestFinalized()
 ```
 
-##getRecentFinalized
+## getRecentFinalized
 
 This function can be used to get the last 10 recently finalized block summary.
 
@@ -72,7 +72,7 @@ This function returns a array of BlockSummary object in case of successful promi
 jsClientSdk.getRecentFinalized()
 ```
 
-##getBlockInfoByHash
+## getBlockInfoByHash
 
 This function can be used to get the block summary or block detail by block hash.
 
@@ -82,7 +82,7 @@ This function returns a **BlockSummary** object if you specify options as BlockI
 jsClientSdk.getBlockInfoByHash(hash, options, callback, errCallback)
 ```
 
-##getBlockInfoByRound
+## getBlockInfoByRound
 
 This function can be used to get the block summary or block detail by round number.
 
@@ -92,7 +92,7 @@ This function returns a **BlockSummary** object if you specify options as BlockI
 jsClientSdk.getBlockInfoByRound(hash, options, callback, errCallback)
 ```
 
-##registerClient
+## registerClient
 
 Registers a client with 0Chain Blockchain.
 
@@ -102,7 +102,7 @@ This function returns a **Wallet** object in case of successful promise resolved
 jsClientSdk.registerClient()
 ```
 
-##restoreWallet
+## restoreWallet
 
 Restore a existing client with 0Chain Blockchain. Need to pass the secret mnemonic
 
@@ -112,7 +112,7 @@ This function returns a **Wallet** object in case of successful promise resolved
 jsClientSdk.restoreWallet(mnemonic)
 ```
 
-##sendTransaction
+## sendTransaction
 
 sends a transaction of the specified amount as mentioned in the value parameter fromAccount toWalletId. 
 
@@ -129,7 +129,7 @@ This function returns a **Transaction** object in case of successful promise res
 jsClientSdk.sendTransaction(fromAccount, toWalletId, value, note)
 ```
 
-##storeData
+## storeData
 
 sends data from wallet along with note. 
 
@@ -138,7 +138,7 @@ This function returns a **Transaction** object in case of successful promise res
 ```
 jsClientSdk.storeData(fromAccount, data, note)
 ``` 
-##checkTransactionStatus
+## checkTransactionStatus
 
 This function can be used to check status of the transaction as uniquely identified by its hash. 
  This function returns a **TransactionDetail** object.
@@ -149,7 +149,7 @@ This function can be used to check status of the transaction as uniquely identif
 jsClientSdk.checkTransactionStatus(hash)
 ```
 
-##getBalance
+## getBalance
 
 This function is used to get the balance of particular wallet.
 
@@ -157,7 +157,7 @@ This function is used to get the balance of particular wallet.
 jsClientSdk.getBalance(client_id)
 ```
 
-##executeSmartContract
+## executeSmartContract
 
 sends a transaction of the specified amount as mentioned in the value parameter fromAccount toWalletId. 
 
