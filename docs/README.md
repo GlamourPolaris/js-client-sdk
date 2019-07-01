@@ -1,17 +1,28 @@
-# TRANSACTION ENDPOINTS
+# 0CHAIN REST ENDPOINTS
 --- 
 
+0Chain rest endpoints can be broadly divided into Wallet Transactions endpoints and Storage Transactions endpoints. Depending on what endpoints you are using, you may want to choose the right SDK. Storage Transactions endpoints are currently supported only on 0Chain's *gosdk* while Wallet Transactions endpoints are supported on both *gosdk* and *js-client-sdk*.
+
+**Note1:** Not all rest endpoints are supported on all of 0Chain nodes. Some are supported on Miners, and some are on Sharders, while others on Blobbers. The endpoints documentation below clearly mentions that.
+
+
 ## ENDPOINT: `/v1/client/put`
+
+**Purpose** To register a wallet on Blockchain
+
 **METHOD** POST
-**Purpose** Wallet Registration with Miners
+
 **Send To** Miners
 
 **Input**
+
 "id": wallet.ClientID
+
 "public_key": wallet.ClientKey
 
 **Output** 
-Wallet Info 
+
+Newly created wallet information 
 
 ***Sample Output***
 ```
@@ -20,12 +31,17 @@ Wallet Info
 ---
 
 ## ENDPOINT: `/v1/transaction/put`
+
+**Purpose** To create a transaction on Blockchain
+
 **METHOD** POST
-**Purpose** Put transactions to miners
+
 **Send To** Miners
 
 **Input** 
+
 Transaction with below details 
+
 ``` go
 type Transaction struct {
 	Hash              string `json:"hash,omitempty"`
@@ -45,8 +61,11 @@ type Transaction struct {
 ```
 
 **Output**
+
 HTTP response status codes
-Returned Transaction Details
+
+Returned Transaction Details sent along with the transaction hash on the blockchain.
+
 
 ***Sample Input***
 ``` 
@@ -59,15 +78,22 @@ Returned Transaction Details
 ```
 ---
 
-## ENDPOINT: `/v1/transaction/get/confirmation?hash=`
+## ENDPOINT: `/v1/transaction/get/confirmation`
+
+**Purpose** To search for a transaction on the blockchain
+
 **METHOD** GET
-**Purpose** Search for a transaction in the blockchain
+
 **Send To** Sharders
 
-**Input** Transaction Hash
+**Input** 
+
+Transaction Hash of the interested transaction
 
 **Output** 
+
 On success: Transaction details on the blockchain
+
 On failure: Error
 
 ***Sample Input***
@@ -86,13 +112,25 @@ http://cala.devb.testnet-0chain.net:7171/v1/transaction/get/confirmation?hash=be
 ```
 ---
 
-## ENDPOINT: `/v1/client/get/balance?client_id=`
-**METHOD** GET
+## ENDPOINT: `/v1/client/get/balance`
+
 **Purpose** To query balance of a wallet
+
+**METHOD** GET
+
 **Send To** Miners
 
-**Input** Wallet's client_id
-**Output** txn hash of pour txn, round, wallet balance
+**Input** 
+
+Wallet's client_id
+
+**Output** 
+
+transaction hash of the pour transaction, 
+
+round when the transaciton is processed,
+
+wallet balance
 
 ***Sample Input***
 ``` 
@@ -107,24 +145,50 @@ http://cala.devb.testnet-0chain.net:7071/v1/client/get/balance?client_id=701fa94
 
 ---
 
-## ENDPOINT: `/v1/scstate/get?sc_address=`
+## ENDPOINT: `/v1/scstate/get`
+
 **METHOD** GET
+
 **Purpose** To get the lock token configuration information such as interest rate from blockchain.
+
 **Send To** Sharders
-**Input** Interest Pool SmartContract Address
-**Output** lock token configuration information
+
+**Input** 
+
+Address of Interest Pool SmartContract
+
+Key of Interest Pool SmartContract
+
+Currently, both of them are predefined. See sample input for more details.
+
+**Output** 
+
+lock token configuration information
+
 ***Sample Input***
 ```
 http://cala.devb.testnet-0chain.net:7171/v1/scstate/get?sc_address=6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9&key=6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9
 ```
 ---
 
-## ENDPOINT:  `/v1/screst/` + InterestPoolSmartContractAddress + `/getPoolsStats?client_id=`
-**METHOD** GET
+## ENDPOINT:  `/v1/screst/` + InterestPoolSmartContractAddress + `/getPoolsStats`
+
+Note: Currently InterestPoolSmartContractAddress is predefined. See sample input for more details.
+
 **Purpose** To get the ealier locked token pool stats
+
+**METHOD** GET
+
 **Send To** Sharder
-**Input** Interest Pool SmartContract Address, Wallet ID
-**Output** locked token pool stats
+
+**Input** 
+
+Interest Pool SmartContract Address, 
+
+Wallet ID of the wallet that owns the locked tokens
+
+**Output** locked token pool stats or a failure message
+
 ***Sample Input***
 ```
 http://peda.devb.testnet-0chain.net:7171/v1/screst/6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9/getPoolsStats?client_id=a406e19a179a5bd10b7d3dd5377f699f76967ad10a31d4805a3909e088e3e501
@@ -137,10 +201,15 @@ http://peda.devb.testnet-0chain.net:7171/v1/screst/6dba10422e368813802877a85039d
 ---
 
 ## ENDPOINT: "/v1/file/upload/"
-**METHOD** POST
+
 **Purpose** To send a upload request
+
+**METHOD** POST'
+
 **Send To** Blobbers
+
 **Input** allocation id, File Reader
+
 ***Sample Input***
 ```
 {POST http://vira.devb.testnet-0chain.net:5051/v1/file/upload/ffb8114204029cc556e0d3f99b3c40a1c0d79f1f75240ef3c9da29f8ff474622 HTTP/1.1 1 1 map[X-App-Client-Id:[6202c8db2657205ce28515ba7c0e65b5acbd55aca4eae3feded3d4d6e8693743] X-App-Client-Key:[245859ccdb88628180de02482aeaac8c56d6ee1035d151a6119593fdaff7f7f4]] 0xc00000e360 <nil> 0 [] false vira.devb.testnet-0chain.net:5051 map[] map[] <nil> map[]   <nil> <nil> <nil> <nil>}
@@ -148,10 +217,15 @@ http://peda.devb.testnet-0chain.net:7171/v1/screst/6dba10422e368813802877a85039d
 ---
 
 ## ENDPOINT: "/v1/file/download/"
-**METHOD** GET
+
 **Purpose** To download a file from remote
+
+**METHOD** GET
+
 **Send To** Blobbers
+
 **Input** Allocation ID, File Reader
+
 ***Sample Input***
 ```
 GET http://virb.devb.testnet-0chain.net:5051/v1/file/referencepath/adf87db53288d0f97ed2ec7db96db1d95376981eeefe4bee8e688e2270e234ab?path=%2FV%2FJ%2FC%2FJ%2FhYzRy.txt HTTP/1.1 1 1 map[X-App-Client-Id:[6202c8db2657205ce28515ba7c0e65b5acbd55aca4eae3feded3d4d6e8693743] X-App-Client-Key:[245859ccdb88628180de02482aeaac8c56d6ee1035d151a6119593fdaff7f7f4]] <nil> <nil> 0 [] false virb.devb.testnet-0chain.net:5051 map[] map[] <nil> map[]   <nil> <nil> <nil> <nil>}
@@ -159,11 +233,17 @@ GET http://virb.devb.testnet-0chain.net:5051/v1/file/referencepath/adf87db53288d
 ---
 
 ## ENDPOINT: '/v1/file/list/'
-**METHOD** GET
+
 **Purpose** To get folder structure and file details from blobbers
+
+**METHOD** GET
+
 **Send To** Blobbers
+
 **Input** Allocation ID, remote path 
+
 **Output** folders and files at the remote path
+
 ***Sample Input***
 ```
 GET http://cala.devb.testnet-0chain.net:5051/v1/file/list/adf87db53288d0f97ed2ec7db96db1d95376981eeefe4bee8e688e2270e234ab?path=%2F HTTP/1.1 1 1 map[] <nil> <nil> 0 [] false cala.devb.testnet-0chain.net:5051 map[] map[] <nil> map[]   <nil> <nil> <nil> <nil>
@@ -172,10 +252,18 @@ GET http://cala.devb.testnet-0chain.net:5051/v1/file/list/adf87db53288d0f97ed2ec
 ---
 
 ## ENDPOINT: '/v1/file/referencepath/'
-**METHOD** GET
+
 **Purpose** To get reference path for a given file
+
+**METHOD** GET
+
 **Send To** Blobbers
-**Input** Allocation ID, absolute remote path
+
+**Input** 
+Allocation ID, 
+
+absolute remote path
+
 ***Sample Input***
 ```
 GET http://virb.devb.testnet-0chain.net:5051/v1/file/referencepath/adf87db53288d0f97ed2ec7db96db1d95376981eeefe4bee8e688e2270e234ab?path=%2FV%2FJ%2FC%2FJ%2FhYzRy.txt HTTP/1.1 1 1 map[X-App-Client-Id:[6202c8db2657205ce28515ba7c0e65b5acbd55aca4eae3feded3d4d6e8693743] X-App-Client-Key:[245859ccdb88628180de02482aeaac8c56d6ee1035d151a6119593fdaff7f7f4]] <nil> <nil> 0 [] false virb.devb.testnet-0chain.net:5051 map[] map[] <nil> map[]   <nil> <nil> <nil> <nil>}
@@ -187,10 +275,15 @@ GET http://virb.devb.testnet-0chain.net:5051/v1/file/referencepath/adf87db53288d
 ---
 
 ## ENDPOINT: "/v1/connection/commit/" 
+
+**Purpose** To commit the upload transaction
+
 **METHOD** POST
-**Purpose** To commit the upload
+
 **Send To** BLOBBERS
+
 **Input** allocation id
+
 ***Sample Input***
 ```
 http://calb.devb.testnet-0chain.net:5051/v1/connection/commit/c471ab76b0bb2766b29cd97830d310d9f45d3a8c0e9bee979a029af37d9acbe3
@@ -198,10 +291,15 @@ http://calb.devb.testnet-0chain.net:5051/v1/connection/commit/c471ab76b0bb2766b2
 ---
 
 ## ENDPOINT: "/v1/file/meta/"
+
+**Purpose** To get meta data of a file
+
 **METHOD** POST
-**Purpose** To get file meta data
+
 **Send To** Blobbers
+
 **Input** allocation id
+
 ***Sample Input***
 ```
 POST http://cala.devb.testnet-0chain.net:5051/v1/file/meta/c471ab76b0bb2766b29cd97830d310d9f45d3a8c0e9bee979a029af37d9acbe3
