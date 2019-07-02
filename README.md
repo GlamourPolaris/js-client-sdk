@@ -1,6 +1,6 @@
 # 0chain Client SDK for Node
 
-This is Node.js implementation of 0chain js-client-sdk.
+This is Node.js implementation of 0chain js-client-sdk. Use this SDK to interact with 0Chain blockchain. The SDK supports wallet creation, transaction submission and verification. In addition to that, the sdk provides APIs to query blockchain health itself. See *example.js* file for more details. 
 
 ## Installation
 Via Github: <https://github.com/0chain/js-client-sdk> 
@@ -14,14 +14,17 @@ First  ```import / require ``` the library from github <https://github.com/0chai
 import jsClientSdk from 'js-client';
 ```
 ## Initialize
+Before any function in the SDK to be called, the *init* function with the cluster configuration should be called. 
 
-Initialize the SDK with local cluster configuration. This function needs to be called before any other functions. 
+**Input Parameters**
 
-```
-jsClientSdk.init()
-```
+config -- json string containig cluster configuration
 
-Initializes the SDK with devb testnet cluster configuration. This function needs to be called before any other functions.
+**Output**
+
+None
+
+The below code shows an example of initiailizing the SDK with *devb* testnet cluster. 
 
 ```
 var config = {
@@ -42,61 +45,21 @@ var config = {
 }
 jsClientSdk.init(config)
 ```
-## getChainStats
-
-This function can be used to get the statistics of the the blockchain (like Current roundnumber, avg block generation time, total_txns etc ..).
-
-This function returns a **ChainStats** object in case of successful promise resolved.
+To use local cluster, call init with no configuration
 
 ```
-jsClientSdk.getChainStats()
+jsClientSdk.init()
 ```
-
-## getLatestFinalized
-
-This function can be used to get the last finalized block summary.
-
-This function returns a **BlockSummary** object in case of successful promise resolved.
-
-```
-jsClientSdk.getLatestFinalized()
-```
-
-## getRecentFinalized
-
-This function can be used to get the last 10 recently finalized block summary.
-
-This function returns a array of BlockSummary object in case of successful promise resolved.
-
-```
-jsClientSdk.getRecentFinalized()
-```
-
-## getBlockInfoByHash
-
-This function can be used to get the block summary or block detail by block hash.
-
-This function returns a **BlockSummary** object if you specify options as BlockInfoOptions.HEADER or **Block** object if you specify options as BlockInfoOptions.FULL 
-
-```
-jsClientSdk.getBlockInfoByHash(hash, options, callback, errCallback)
-```
-
-## getBlockInfoByRound
-
-This function can be used to get the block summary or block detail by round number.
-
-This function returns a **BlockSummary** object if you specify options as BlockInfoOptions.HEADER or **Block** object if you specify options as BlockInfoOptions.FULL.
-
-```
-jsClientSdk.getBlockInfoByRound(hash, options, callback, errCallback)
-```
-
 ## registerClient
 
 Registers a client with 0Chain Blockchain.
 
-This function returns a **Wallet** object in case of successful promise resolved.
+**Input Parameters**
+None
+
+**Output**
+
+**Wallet** object in case of successful promise resolved.
 
 ```
 jsClientSdk.registerClient()
@@ -106,7 +69,13 @@ jsClientSdk.registerClient()
 
 Restore a existing client with 0Chain Blockchain. Need to pass the secret mnemonic
 
-This function returns a **Wallet** object in case of successful promise resolved.
+**Input Parameters**
+
+mnemonic -- string 
+
+**Output**
+
+ Wallet  --if successful. Error otherwise
 
 ```
 jsClientSdk.restoreWallet(mnemonic)
@@ -114,16 +83,21 @@ jsClientSdk.restoreWallet(mnemonic)
 
 ## sendTransaction
 
-sends a transaction of the specified amount as mentioned in the value parameter fromAccount toWalletId. 
+Use this function send tokens from one wallet to the other.
 
-Input :<br/>
-fromAccount - Wallet Object got from registerClient<br/>
-toWalletId  - another wallet id<br/>
-value - amount want to send <br/>
-note - some description<br/>
+**Input Parameters**
 
+fromAccount - From Wallet
 
-This function returns a **Transaction** object in case of successful promise resolved.
+toWalletId  - To wallet
+
+value - amount to send
+
+note - description for the transaction
+
+**Ouput**
+
+ Transaction --if successful. Error otherwise
 
 ```
 jsClientSdk.sendTransaction(fromAccount, toWalletId, value, note)
@@ -131,19 +105,37 @@ jsClientSdk.sendTransaction(fromAccount, toWalletId, value, note)
 
 ## storeData
 
-sends data from wallet along with note. 
+Use this function to store data on a wallet
 
-This function returns a **Transaction** object in case of successful promise resolved..
+**Input Parameters**
+
+fromAccount - From Wallet
+
+toWalletId  - To wallet
+
+note - description for the transaction
+
+**Ouput**
+
+Transaction --if successful. Error otherwise
 
 ```
 jsClientSdk.storeData(fromAccount, data, note)
 ``` 
 ## checkTransactionStatus
 
-This function can be used to check status of the transaction as uniquely identified by its hash. 
- This function returns a **TransactionDetail** object.
+Use this function to check the status of the transaction that has been placed earlier. 
 
- Transaction will take some time to add it in to the blockchain, so we can call the checkTransactionStatus api after 3 sec .
+*Note* Transaction status will be available only after the transaction is processed. Please provide at least 3 seconds time for the transaction to process. You can check status multiple times.
+
+**Input Parameters**
+
+hash - Hash of the transaction that was placed earlier
+
+
+**Ouput**
+
+TransactionDetails  -- Details of the transaction which has the status field.
 
 ```
 jsClientSdk.checkTransactionStatus(hash)
@@ -151,7 +143,17 @@ jsClientSdk.checkTransactionStatus(hash)
 
 ## getBalance
 
-This function is used to get the balance of particular wallet.
+Use this function to get the balance of particular wallet.
+
+**Input Parameters**
+
+client_id - The wallet whose balance you are interested in
+
+
+**Ouput**
+
+TransactionDetails  -- Details of the transaction which has the balance field.
+
 
 ```
 jsClientSdk.getBalance(client_id)
@@ -161,19 +163,114 @@ jsClientSdk.getBalance(client_id)
 
 sends a transaction of the specified amount as mentioned in the value parameter fromAccount toWalletId. 
 
-Input :<br/>
-fromAccount - Wallet Object got from registerClient<br/>
-smartContractAddress  - address of intended smartContract<br/>
-payload - Input needed for execute the particular smartContract function <br/>
-transactionValue - transaction value by default zero<br/>
+**Input Parameters**
 
+fromAccount - from Wallet
 
-This function returns a **Transaction** object in case of successful promise resolved.
+smartContractAddress  - address of intended smartContract
+
+payload - depends on the smartContract function that is being executed
+
+transactionValue - transaction value --by default zero
+
+**Output**
+Transaction -- object if successful.
 
 ```
 jsClientSdk.executeSmartContract(fromAccount, smartContractAddress, payload, transactionValue)
 ```
 
+## getBlockInfoByHash
+
+Use this function to get the block summary or block detail by block hash.
+
+**Input Parameters**
+
+hash -- hash of the block
+
+options -- use BlockInfoOptions.HEADER to get only the summary or BlockInfoOptions.Full to get entire block. Default is HEADER
+
+callback -- function to be called upon success
+
+errCallback -- function to be called upon failure
+
+**Output**
+
+Block Summary or Block object depending on the options specified 
+
+```
+jsClientSdk.getBlockInfoByHash(hash, options, callback, errCallback)
+```
+
+## getBlockInfoByRound
+
+Use this function to get the block summary or block detail by round number.
+
+**Input Parameters**
+
+round  -- round number
+options -- use BlockInfoOptions.HEADER to get only the summary or BlockInfoOptions.Full to get entire block. Default is HEADER
+
+callback -- function to be called upon success
+
+errCallback -- function to be called upon failure
+
+**Output**
+
+Block Summary or Block object depending on the options specified 
+
+```
+jsClientSdk.getBlockInfoByRound(round, options, callback, errCallback)
+```
+
+
+## getChainStats
+
+Use this function to get current information about the blockchain like current roundnumber, average block generation/finalization time, etc
+
+**Input Parameters**
+
+none
+
+**Output**
+
+ChainStats  --an object that has detailed information about the blockchain.
+
+```
+jsClientSdk.getChainStats()
+```
+
+## getLatestFinalized
+
+use this function to get the last finalized block summary.
+
+**Input Parameters**
+
+None
+
+**Output**
+
+BlockSummary  --object if successful that has information of latest finalized block
+
+```
+jsClientSdk.getLatestFinalized()
+```
+
+## getRecentFinalized
+
+Use this function to get summaries of last 10 recently finalized blocks.
+
+**Input Parameters**
+
+none
+
+**Output**
+
+array of BlockSummary . --if successful.
+
+```
+jsClientSdk.getRecentFinalized()
+```
 
 ## Example file
 The SDK also comes with an **example.js** file that demonstrates how the APIs can be used. 
