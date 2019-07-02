@@ -89,7 +89,7 @@ Use this function send tokens from one wallet to the other.
 
 fromAccount - From Wallet
 
-toWalletId  - To wallet
+toWalletId  - To wallet clientId
 
 value - amount to send
 
@@ -111,7 +111,7 @@ Use this function to store data on a wallet
 
 fromAccount - From Wallet
 
-toWalletId  - To wallet
+data  - data to save in the blockchain (string type)
 
 note - description for the transaction
 
@@ -147,7 +147,7 @@ Use this function to get the balance of particular wallet.
 
 **Input Parameters**
 
-client_id - The wallet whose balance you are interested in
+client_id - The clientId whose balance you are interested in
 
 
 **Ouput**
