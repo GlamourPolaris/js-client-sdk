@@ -312,7 +312,6 @@ async function getInformationFromRandomSharder(url, params, parser) {
         const promises = urls.map(url => utils.getReq(url, params));
         BlueBirdPromise.some(promises, 1)
             .then(function (result) {
-                console.log("My data", result);
                 if (result[0].data) {
                     const data = typeof parser !== "undefined" ? parser(result[0].data) : result[0].data;
                     resolve(data);

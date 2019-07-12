@@ -148,6 +148,11 @@ module.exports = {
         const self = this;
         return axios.get(url, {
             params: params,
+            // validateStatus: function (status) {
+            //     console.log("Status", status)
+            //     console.log("Status url", url)
+            //     return (status >= 200 && status < 300) || status == 400;
+            // },
             transformResponse: function (data, headers) {
                 return self.parseJson(data)
             }
@@ -166,16 +171,20 @@ module.exports = {
 
             const urls = sharders.map(sharder => sharder + url);
             const promises = urls.map(url => self.getReq(url, params));
-
-            let percentage = Math.round(promises.length * consensusPercentage / 100);
+            let percentage = Math.ceil((promises.length * consensusPercentage) / 100);
 
             BlueBirdPromise.some(promises, percentage)
                 .then(function (result) {
+
+                    //console.log("Result", result);
+
                     const hashedResponses = result.map(r => {
                         return sha3.sha3_256(JSON.stringify(r.data))
                     });
 
                     const consensusResponse = getConsensusMessageFromResponse(hashedResponses, percentage, result);
+
+                    //console.log("consensusResponse", consensusResponse)
                     if (consensusResponse === null) {
                         reject({ error: "Not enough consensus" });
                     }
@@ -184,6 +193,7 @@ module.exports = {
                     }
                 })
                 .catch(BlueBirdPromise.AggregateError, function (err) {
+                    //console.log("Error in blue bird", err)
                     const errors = err.map(e => {
                         if (e.response !== undefined && e.response.status !== undefined && e.response.status === 400 && e.response.data !== undefined) {
                             return sha3.sha3_256(JSON.stringify(e.response.data))
@@ -250,7 +260,7 @@ module.exports = {
         return new Promise(function (resolve, reject) {
             const urls = miners.map(miner => miner + url);
             const promises = urls.map(url => self.postReq(url, postData));
-            let percentage = Math.round(promises.length * consensusPercentage / 100);
+            let percentage = Math.ceil(promises.length * consensusPercentage / 100);
             BlueBirdPromise.some(promises, percentage)
                 .then(function (result) {
                     resolve(result[0].data);
