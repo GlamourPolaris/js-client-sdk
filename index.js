@@ -47,6 +47,7 @@ const Endpoints = {
     // SC REST
     SC_REST : "v1/screst/",
     SC_REST_ALLOCATION: "v1/screst/"+StorageSmartContractAddress+"/allocation",
+    SC_BLOBBER_STATS : "v1/screst/"+StorageSmartContractAddress+"/getblobbers",
 
     //BLOBBER
     ALLOCATION_FILE_LIST: "/v1/file/list/",
@@ -232,6 +233,10 @@ module.exports = {
 
     allocationInfo: function allocationInfo(id){
         return utils.getConsensusedInformationFromSharders(sharders,Endpoints.SC_REST_ALLOCATION ,{ allocation: id });
+    },
+
+    getAllBlobbers: function getAllBlobbers() {
+        return utils.getConsensusedInformationFromSharders(sharders,Endpoints.SC_BLOBBER_STATS ,{});
     },
 
     getAllocationFilesFromPath: (allocation_id, blobber_list, path) => {
