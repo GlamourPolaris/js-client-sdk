@@ -29,6 +29,7 @@ var miners, sharders, clusterName, version;
 
 const StorageSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7";
 const FaucetSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3";
+const InterestPoolSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9";
 
 
 const Endpoints = {
@@ -48,6 +49,8 @@ const Endpoints = {
     SC_REST : "v1/screst/",
     SC_REST_ALLOCATION: "v1/screst/"+StorageSmartContractAddress+"/allocation",
     SC_BLOBBER_STATS : "v1/screst/"+StorageSmartContractAddress+"/getblobbers",
+
+    GET_LOCKED_TOKENS: "v1/screst/"+InterestPoolSmartContractAddress+"/getPoolsStats",
 
     //BLOBBER
     ALLOCATION_FILE_LIST: "/v1/file/list/",
@@ -170,6 +173,25 @@ module.exports = {
             })
         });
         // return getInformationFromRandomSharder(Endpoints.GET_BALANCE, { client_id: client_id });
+    },
+
+    getlockedTokens: (client_id) => {
+        return new Promise(async function (resolve, reject) {
+            utils.getConsensusedInformationFromSharders(sharders,Endpoints.GET_LOCKED_TOKENS,{ client_id: client_id })
+            .then((res) => {
+                resolve(res);
+            })
+            .catch((error) => {
+                if(error.error === "tokens not present") {
+                    resolve({
+                        tokens: 0
+                    })
+                }
+                else {
+                    reject(error);
+                }
+            })
+        });
     },
 
     checkTransactionStatus: (hash) => {
