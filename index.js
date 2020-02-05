@@ -175,7 +175,7 @@ module.exports = {
         // return getInformationFromRandomSharder(Endpoints.GET_BALANCE, { client_id: client_id });
     },
 
-    getlockedTokens: (client_id) => {
+    getLockedTokens: (client_id) => {
         return new Promise(async function (resolve, reject) {
             utils.getConsensusedInformationFromSharders(sharders,Endpoints.GET_LOCKED_TOKENS,{ client_id: client_id })
             .then((res) => {
