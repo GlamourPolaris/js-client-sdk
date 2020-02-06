@@ -182,9 +182,9 @@ module.exports = {
                 resolve(res);
             })
             .catch((error) => {
-                if(error.error === "tokens not present") {
+                if(error.error === "failed to get stats: no pools exist") {
                     resolve({
-                        tokens: 0
+                        locked_tokens: {}
                     })
                 }
                 else {
