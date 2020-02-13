@@ -184,7 +184,7 @@ module.exports = {
             })
             .catch((error) => {
                 resolve({
-                    locked_tokens: {}
+                    locked_tokens: []
                 })
             })
         });
@@ -194,11 +194,16 @@ module.exports = {
         return new Promise(async function (resolve, reject) {
             utils.getConsensusedInformationFromSharders(sharders,Endpoints.GET_USER_POOLS,{ client_id: client_id })
             .then((res) => {
+                if (res.pools===null){
+                    resolve({
+                        pools: []
+                    })
+                }
                 resolve(res);
             })
             .catch((error) => {
                 resolve({
-                    user_pools: {}
+                    pools: []
                 })
             })
         });
