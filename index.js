@@ -30,7 +30,7 @@ var miners, sharders, clusterName, version;
 const StorageSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7";
 const FaucetSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3";
 const InterestPoolSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9";
-
+const MinerSmartContractAddress= "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d1";
 
 const Endpoints = {
     REGISTER_CLIENT: 'v1/client/put',
@@ -51,6 +51,7 @@ const Endpoints = {
     SC_BLOBBER_STATS : "v1/screst/"+StorageSmartContractAddress+"/getblobbers",
 
     GET_LOCKED_TOKENS: "v1/screst/"+InterestPoolSmartContractAddress+"/getPoolsStats",
+    GET_USER_POOLS: "v1/screst/"+MinerSmartContractAddress+"/getUserPools",
 
     //BLOBBER
     ALLOCATION_FILE_LIST: "/v1/file/list/",
@@ -182,14 +183,23 @@ module.exports = {
                 resolve(res);
             })
             .catch((error) => {
-                if(error.error === "failed to get stats: no pools exist") {
-                    resolve({
-                        locked_tokens: {}
-                    })
-                }
-                else {
-                    reject(error);
-                }
+                resolve({
+                    locked_tokens: {}
+                })
+            })
+        });
+    },
+
+    getUserPools: (client_id) => {
+        return new Promise(async function (resolve, reject) {
+            utils.getConsensusedInformationFromSharders(sharders,Endpoints.GET_USER_POOLS,{ client_id: client_id })
+            .then((res) => {
+                resolve(res);
+            })
+            .catch((error) => {
+                resolve({
+                    user_pools: {}
+                })
             })
         });
     },
