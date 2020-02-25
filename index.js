@@ -15,7 +15,7 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-const nacl = require('tweetnacl');
+// const nacl = require('tweetnacl');
 const sha3 = require('js-sha3');
 const bip39 = require('bip39');
 var BlueBirdPromise = require("bluebird");
@@ -26,6 +26,7 @@ var models = require('./models');
 "use strict";
 
 var miners, sharders, clusterName, version;
+let apiEndpoint;
 
 const StorageSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7";
 const FaucetSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3";
@@ -80,7 +81,7 @@ module.exports = {
     },
 
     /////////////SDK Stuff below //////////////
-    init: function init(configObject) {
+    init: function init(configObject, blsEndpoint="http://localhost:3005/") {
         var config;
         if (typeof configObject != "undefined" && configObject.hasOwnProperty('miners') &&
             configObject.hasOwnProperty('sharders') && configObject.hasOwnProperty('clusterName')) {
@@ -101,6 +102,7 @@ module.exports = {
             };
             config = jsonContent;
         }
+        apiEndpoint = blsEndpoint;
         miners = config.miners;
         sharders = config.sharders;
         clusterName = config.clusterName;
@@ -388,32 +390,37 @@ async function getInformationFromRandomSharder(url, params, parser) {
 }
 
 function createWallet(mnemonic) {
-    const seed = bip39.mnemonicToSeed(mnemonic).slice(32);
-    const keys = nacl.sign.keyPair.fromSeed(seed);//nacl.sign.keyPair();
-    const key = utils.byteToHexString(keys.publicKey);
-    const id = sha3.sha3_256(keys.publicKey);
-    const sKey = utils.byteToHexString(keys.secretKey);
-
-    var data = {};
-    data.public_key = key;
-    data.id = id;
 
     return new Promise(function (resolve, reject) {
-        utils.doParallelPostReqToAllMiners(miners, Endpoints.REGISTER_CLIENT, data)
-            .then((response) => {
-                const myaccount = response;
-                myaccount.entity.secretKey = sKey;
-                myaccount.entity.mnemonic = mnemonic;
-                var ae = new models.Wallet(myaccount.entity);
-                resolve(ae);
-            })
-            .catch((error) => {
-                reject(error);
-            })
-    });
+        utils.postReq(`${apiEndpoint}transaction/get-keys`, {}).then((keys) => {
+
+            const key = keys.data.response.public_key;
+            const id = sha3.sha3_256(utils.hexStringToByte(key));
+            const sKey = keys.data.response.private_key;
+            var data = {};
+            data.public_key = key;
+            data.id = id;
+
+            resolve(new Promise(function (resolve, reject) {
+                utils.doParallelPostReqToAllMiners(miners, Endpoints.REGISTER_CLIENT, data)
+                    .then((response) => {
+                        const myaccount = response;
+                        myaccount.entity.secretKey = sKey;
+                        myaccount.entity.mnemonic = mnemonic;
+                        var ae = new models.Wallet(myaccount.entity);
+                        resolve(ae);
+                    })
+                    .catch((error) => {
+                        reject(error);
+                    })
+            }));
+        }).catch((err) => {
+            return 'Error while creating wallet'
+        })
+    })
 }
 
-function submitTransaction(ae, toClientId, val, note, transaction_type) {
+async function submitTransaction(ae, toClientId, val, note, transaction_type) {
 
     const hashPayload = sha3.sha3_256(note);
     const ts = Math.floor(new Date().getTime() / 1000);
@@ -421,8 +428,14 @@ function submitTransaction(ae, toClientId, val, note, transaction_type) {
     const hashdata = ts + ":" + ae.id + ":" + toClientId + ":" + val + ":" + hashPayload;
 
     const hash = sha3.sha3_256(hashdata);
-    const signedData = nacl.sign.detached(utils.hexStringToByte(hash),
-        utils.hexStringToByte(ae.secretKey));
+
+    const signedData = await utils.postReq(
+        `${apiEndpoint}transaction/sign-transaction`,
+        {
+            transactionHash: hash,
+            private_key: ae.secretKey
+        }
+    )
 
     var data = {};
     data.client_id = ae.id;
@@ -432,8 +445,8 @@ function submitTransaction(ae, toClientId, val, note, transaction_type) {
     data.creation_date = ts;
     data.to_client_id = toClientId;
     data.hash = hash;
-    data.signature = utils.byteToHexString(signedData);
-
+    data.signature = signedData.data.signedTransaction;
+    
     return new Promise(function (resolve, reject) {
         utils.doParallelPostReqToAllMiners(miners, Endpoints.PUT_TRANSACTION, data)
             .then((response) => {
@@ -443,5 +456,4 @@ function submitTransaction(ae, toClientId, val, note, transaction_type) {
                 reject(error);
             })
     });
-
 }
