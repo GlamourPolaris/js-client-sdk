@@ -26,7 +26,7 @@ var models = require('./models');
 "use strict";
 
 var miners, sharders, clusterName, version;
-let apiEndpoint;
+let bls;
 
 const StorageSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7";
 const FaucetSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3";
@@ -81,7 +81,7 @@ module.exports = {
     },
 
     /////////////SDK Stuff below //////////////
-    init: function init(configObject, blsEndpoint="http://localhost:3005/") {
+    init: function init(configObject, bls_wasm) {
         var config;
         if (typeof configObject != "undefined" && configObject.hasOwnProperty('miners') &&
             configObject.hasOwnProperty('sharders') && configObject.hasOwnProperty('clusterName')) {
@@ -102,7 +102,8 @@ module.exports = {
             };
             config = jsonContent;
         }
-        apiEndpoint = blsEndpoint;
+        bls = bls_wasm;
+        bls.init(bls.BN254)
         miners = config.miners;
         sharders = config.sharders;
         clusterName = config.clusterName;
@@ -389,36 +390,31 @@ async function getInformationFromRandomSharder(url, params, parser) {
 
 }
 
-function createWallet(mnemonic) {
+function createWallet() {
+    
+    const blsSecret = new bls.SecretKey();
+    blsSecret.setByCSPRNG()
+    const key = blsSecret.getPublicKey().serializeToHexStr();
+    const id = sha3.sha3_256(utils.hexStringToByte(key));
+    const sKey = blsSecret.serializeToHexStr();
+    var data = {};
+    data.public_key = key;
+    data.id = id;
 
     return new Promise(function (resolve, reject) {
-        utils.postReq(`${apiEndpoint}transaction/get-keys`, {}).then((keys) => {
-
-            const key = keys.data.response.public_key;
-            const id = sha3.sha3_256(utils.hexStringToByte(key));
-            const sKey = keys.data.response.private_key;
-            var data = {};
-            data.public_key = key;
-            data.id = id;
-
-            resolve(new Promise(function (resolve, reject) {
-                utils.doParallelPostReqToAllMiners(miners, Endpoints.REGISTER_CLIENT, data)
-                    .then((response) => {
-                        const myaccount = response;
-                        myaccount.entity.secretKey = sKey;
-                        myaccount.entity.mnemonic = mnemonic;
-                        var ae = new models.Wallet(myaccount.entity);
-                        resolve(ae);
-                    })
-                    .catch((error) => {
-                        reject(error);
-                    })
-            }));
-        }).catch((err) => {
-            return 'Error while creating wallet'
-        })
-    })
+        utils.doParallelPostReqToAllMiners(miners, Endpoints.REGISTER_CLIENT, data)
+            .then((response) => {
+                const myaccount = response;
+                myaccount.entity.secretKey = sKey;
+                var ae = new models.Wallet(myaccount.entity);
+                resolve(ae);
+            })
+            .catch((error) => {
+                reject(error);
+            })
+    });
 }
+
 
 async function submitTransaction(ae, toClientId, val, note, transaction_type) {
 
@@ -429,13 +425,10 @@ async function submitTransaction(ae, toClientId, val, note, transaction_type) {
 
     const hash = sha3.sha3_256(hashdata);
 
-    const signedData = await utils.postReq(
-        `${apiEndpoint}transaction/sign-transaction`,
-        {
-            transactionHash: hash,
-            private_key: ae.secretKey
-        }
-    )
+    const bytehash = utils.hexStringToByte(hash);
+	const sec = new bls.SecretKey();
+	sec.deserializeHexStr(ae.secretKey);
+	const sig = sec.sign(bytehash);
 
     var data = {};
     data.client_id = ae.id;
@@ -445,7 +438,7 @@ async function submitTransaction(ae, toClientId, val, note, transaction_type) {
     data.creation_date = ts;
     data.to_client_id = toClientId;
     data.hash = hash;
-    data.signature = signedData.data.signedTransaction;
+    data.signature = sig.serializeToHexStr();
     
     return new Promise(function (resolve, reject) {
         utils.doParallelPostReqToAllMiners(miners, Endpoints.PUT_TRANSACTION, data)
