@@ -271,6 +271,16 @@ module.exports = {
         return this.executeSmartContract(ae, undefined, JSON.stringify(payload));
     },
 
+    createLockTokens: function(ae, val, durationHr, durationMin){
+        const payload = {
+            name: "lock",
+            input: {
+                duration: `${durationHr}h${durationMin}m`
+            }
+        }
+        return this.executeSmartContract(ae, InterestPoolSmartContractAddress, payload, val)
+    },
+
     allocationInfo: function allocationInfo(id){
         return utils.getConsensusedInformationFromSharders(sharders,Endpoints.SC_REST_ALLOCATION ,{ allocation: id });
     },
