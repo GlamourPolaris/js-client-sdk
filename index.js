@@ -278,7 +278,7 @@ module.exports = {
                 duration: `${durationHr}h${durationMin}m`
             }
         }
-        return this.executeSmartContract(ae, InterestPoolSmartContractAddress, payload, val)
+        return this.executeSmartContract(ae, InterestPoolSmartContractAddress, JSON.stringify(payload), val)
     },
 
     allocationInfo: function allocationInfo(id){
@@ -427,16 +427,15 @@ function createWallet() {
 
 
 async function submitTransaction(ae, toClientId, val, note, transaction_type) {
-
+    
     const hashPayload = sha3.sha3_256(note);
     const ts = Math.floor(new Date().getTime() / 1000);
 
     const hashdata = ts + ":" + ae.id + ":" + toClientId + ":" + val + ":" + hashPayload;
-
+    
     const hash = sha3.sha3_256(hashdata);
-
     const bytehash = utils.hexStringToByte(hash);
-	const sec = new bls.SecretKey();
+    const sec = new bls.SecretKey();
 	sec.deserializeHexStr(ae.secretKey);
 	const sig = sec.sign(bytehash);
 
