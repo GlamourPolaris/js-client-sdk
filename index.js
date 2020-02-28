@@ -56,7 +56,9 @@ const Endpoints = {
 
     //BLOBBER
     ALLOCATION_FILE_LIST: "/v1/file/list/",
-    FILE_META: "/v1/file/meta/"
+    FILE_META: "/v1/file/meta/",
+    FILE_STATS_ENDPOINT = "/v1/file/stats/",
+    OBJECT_TREE_ENDPOINT = "/v1/file/objecttree/"
 }
 
 const TransactionType = {
@@ -327,6 +329,10 @@ module.exports = {
 
     getAllocationDirStructure: function () {
 
+    },
+
+    getFileStats: function(id){
+        return utils.getConsensusedInformationFromSharders(sharders,Endpoints.FILE_STATS_ENDPOINT ,{ allocation: id });
     },
 
     /** Faucets Apis */
