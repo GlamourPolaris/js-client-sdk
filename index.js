@@ -56,9 +56,7 @@ const Endpoints = {
 
     //BLOBBER
     ALLOCATION_FILE_LIST: "/v1/file/list/",
-    FILE_META: "/v1/file/meta/",
-    FILE_STATS_ENDPOINT = "/v1/file/stats/",
-    OBJECT_TREE_ENDPOINT = "/v1/file/objecttree/"
+    FILE_META: "/v1/file/meta/"
 }
 
 const TransactionType = {
