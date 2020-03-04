@@ -59,7 +59,7 @@ const Endpoints = {
     ALLOCATION_FILE_LIST: "/v1/file/list/",
     FILE_STATS_ENDPOINT: "/v1/file/stats/",
     OBJECT_TREE_ENDPOINT: "/v1/file/objecttree/",
-    FILE_META: "v1/file/meta"
+    FILE_META_ENDPOINT: "/v1/file/meta/"
 }
 
 const TransactionType = {
@@ -248,7 +248,7 @@ module.exports = {
     },
 
     //Smart contract address need to pass in toClientId
-    executeSmartContract: async (ae, to_client_id, payload, transactionValue = 0) => {
+    executeSmartContract: (ae, to_client_id, payload, transactionValue = 0) => {
         const toClientId = typeof to_client_id === "undefined" ? StorageSmartContractAddress : to_client_id;
         return submitTransaction(ae, toClientId, transactionValue, payload, TransactionType.SMART_CONTRACT);
     },
@@ -258,7 +258,7 @@ module.exports = {
         // return getInformationFromRandomSharder(Endpoints.GET_SCSTATE, { key: keyName+":"+keyvalue, sc_address: StorageSmartContractAddress  });
     },
 
-    allocateStorage: function allocateStorage(ae, num_writes, data_shards, parity_shards, size, expiration_date) {
+    allocateStorage: function allocateStorage(ae, num_writes, data_shards, parity_shards, size = 2147483648, expiration_date = 2592000) {
         const payload = {
             name: "new_allocation_request",
             input: {
@@ -274,7 +274,7 @@ module.exports = {
         return this.executeSmartContract(ae, undefined, JSON.stringify(payload));
     },
 
-    updateAllocation: function updateAllocation(allocation_id, expiration_date = 2592000, size = 2147483648){
+    updateAllocation: function updateAllocation(ae, allocation_id, expiration_date = 2592000, size = 2147483648){
         const payload = {
             name: "update_allocation_request",
             input: {
@@ -300,16 +300,12 @@ module.exports = {
             input: {
                 duration: `${durationHr}h${durationMin}m`
             }
-        }
+        }        
         return this.executeSmartContract(ae, InterestPoolSmartContractAddress, JSON.stringify(payload), val)
     },
 
     getAllBlobbers: function getAllBlobbers() {
         return utils.getConsensusedInformationFromSharders(sharders,Endpoints.SC_BLOBBER_STATS ,{});
-    },
-
-    getFileStats: function getFileStats(allocation_id, remotepath){
-        
     },
 
     getAllocationFilesFromPath: (allocation_id, blobber_list, path) => {
@@ -344,20 +340,36 @@ module.exports = {
 
     },
 
-    getFileMetaDataFromBlobber: (allocation_id, blobber_url, path, fileName) => {
-        return sdk.utils.getReq(blobber_url + allocation_id, {path: path, filename: fileName});
+    getFileMetaDataFromPath: async (allocation_id, blobber, path, client_id) => {
+        return new Promise(async function (resolve, reject) {
+            var blobber_url;
+            blobber_url = blobber + Endpoints.FILE_META_ENDPOINT + allocation_id;
+            const response = await utils.postReqToBlobber(blobber_url, {path: path}, client_id);
+            if (response.status===200){
+                resolve(response.data)
+            }else{
+                reject('Not able to fetch file details from blobbers')
+            }
+        });
+
     },
 
-    getFileMetaData: async (allocation_id) => {
-        await utils.doParallelPostReqToAllMiners(miners, Endpoints.FILE_META ,{ allocation: allocation_id });
+    getFileStatsFromPath: async (allocation_id, blobber, path, client_id) => {
+        return new Promise(async function (resolve, reject) {
+            var blobber_url;
+            blobber_url = blobber + Endpoints.FILE_STATS_ENDPOINT + allocation_id;
+            const response = await utils.postReqToBlobber(blobber_url, {path: path}, client_id);
+            if (response.status===200){
+                resolve(response.data)
+            }else{
+                reject('Not able to fetch file stats from blobbers')
+            }
+        });
+
     },
 
     getAllocationDirStructure: function () {
 
-    },
-
-    getFileStats: function(id){
-        return utils.getConsensusedInformationFromSharders(sharders,Endpoints.FILE_STATS_ENDPOINT ,{ allocation: id });
     },
 
     /** Faucets Apis */
