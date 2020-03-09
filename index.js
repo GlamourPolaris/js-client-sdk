@@ -43,7 +43,6 @@ const Endpoints = {
     GET_BLOCK_INFO: "v1/block/get",
     CHECK_TRANSACTION_STATUS: "v1/transaction/get/confirmation",
     GET_BALANCE: "v1/client/get/balance",
-
     GET_SCSTATE: "v1/scstate/get",
     
     // SC REST
