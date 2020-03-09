@@ -43,12 +43,12 @@ const Endpoints = {
     GET_BLOCK_INFO: "v1/block/get",
     CHECK_TRANSACTION_STATUS: "v1/transaction/get/confirmation",
     GET_BALANCE: "v1/client/get/balance",
-
     GET_SCSTATE: "v1/scstate/get",
     
     // SC REST
     SC_REST : "v1/screst/",
     SC_REST_ALLOCATION: "v1/screst/"+StorageSmartContractAddress+"/allocation",
+    SC_REST_ALLOCATIONS: "v1/screst/"+StorageSmartContractAddress+"/allocations",
     SC_BLOBBER_STATS : "v1/screst/"+StorageSmartContractAddress+"/getblobbers",
 
     GET_LOCKED_TOKENS: "v1/screst/"+InterestPoolSmartContractAddress+"/getPoolsStats",
@@ -56,7 +56,9 @@ const Endpoints = {
 
     //BLOBBER
     ALLOCATION_FILE_LIST: "/v1/file/list/",
-    FILE_META: "/v1/file/meta/"
+    FILE_STATS_ENDPOINT: "/v1/file/stats/",
+    OBJECT_TREE_ENDPOINT: "/v1/file/objecttree/",
+    FILE_META_ENDPOINT: "/v1/file/meta/"
 }
 
 const TransactionType = {
@@ -145,7 +147,6 @@ module.exports = {
                 return new models.Block(rawData.block);
             }
         });
-
     },
 
     getBlockInfoByRound: function getBlockInfoByRound(round, options = this.BlockInfoOptions.HEADER) {
@@ -256,14 +257,27 @@ module.exports = {
         // return getInformationFromRandomSharder(Endpoints.GET_SCSTATE, { key: keyName+":"+keyvalue, sc_address: StorageSmartContractAddress  });
     },
 
-    allocateStorage: function allocateStorage(ae, num_writes, data_shards, parity_shards, type, size, expiration_date) {
+    allocateStorage: function allocateStorage(ae, data_shards = 2, parity_shards = 2, size = 2147483648, expiration_date = 2592000, num_writes = 0) {
         const payload = {
             name: "new_allocation_request",
             input: {
-                num_writes: num_writes,
                 data_shards: data_shards,
                 parity_shards: parity_shards,
-                type: type,
+                owner_id: ae.id,
+                owner_public_key: ae.public_key,
+                size: size,
+                expiration_date: expiration_date,
+                num_writes: num_writes
+            }
+        }
+        return this.executeSmartContract(ae, undefined, JSON.stringify(payload));
+    },
+
+    updateAllocation: function updateAllocation(ae, allocation_id, expiration_date = 2592000, size = 2147483648){
+        const payload = {
+            name: "update_allocation_request",
+            input: {
+                id: allocation_id,
                 size: size,
                 expiration_date: expiration_date
             }
@@ -271,7 +285,15 @@ module.exports = {
         return this.executeSmartContract(ae, undefined, JSON.stringify(payload));
     },
 
-    createLockTokens: function(ae, val, durationHr, durationMin){
+    allocationInfo: function allocationInfo(id){
+        return utils.getConsensusedInformationFromSharders(sharders,Endpoints.SC_REST_ALLOCATION ,{ allocation: id });
+    },
+
+    listAllocations: function listAllocations(id){
+        return utils.getConsensusedInformationFromSharders(sharders, Endpoints.SC_REST_ALLOCATIONS ,{ client: id })
+    },
+
+    createLockTokens: async function(ae, val, durationHr, durationMin){
         const payload = {
             name: "lock",
             input: {
@@ -279,10 +301,6 @@ module.exports = {
             }
         }
         return this.executeSmartContract(ae, InterestPoolSmartContractAddress, JSON.stringify(payload), val)
-    },
-
-    allocationInfo: function allocationInfo(id){
-        return utils.getConsensusedInformationFromSharders(sharders,Endpoints.SC_REST_ALLOCATION ,{ allocation: id });
     },
 
     getAllBlobbers: function getAllBlobbers() {
@@ -321,16 +339,36 @@ module.exports = {
 
     },
 
-    getFileMetaDataFromBlobber: (allocation_id, blobber_url, path, fileName) => {
-        return sdk.utils.getReq(blobber_url + allocation_id, {path: path, filename: fileName});
+    getFileMetaDataFromPath: async (allocation_id, blobber, path, client_id) => {
+        return new Promise(async function (resolve, reject) {
+            var blobber_url;
+            blobber_url = blobber + Endpoints.FILE_META_ENDPOINT + allocation_id;
+            const response = await utils.postReqToBlobber(blobber_url, {path: path}, client_id);
+            if (response.status===200){
+                resolve(response.data)
+            }else{
+                reject('Not able to fetch file details from blobbers')
+            }
+        });
+
+    },
+
+    getFileStatsFromPath: async (allocation_id, blobber, path, client_id) => {
+        return new Promise(async function (resolve, reject) {
+            var blobber_url;
+            blobber_url = blobber + Endpoints.FILE_STATS_ENDPOINT + allocation_id;
+            const response = await utils.postReqToBlobber(blobber_url, {path: path}, client_id);
+            if (response.status===200){
+                resolve(response.data)
+            }else{
+                reject('Not able to fetch file stats from blobbers')
+            }
+        });
+
     },
 
     getAllocationDirStructure: function () {
 
-    },
-
-    getFileStats: function(id){
-        return utils.getConsensusedInformationFromSharders(sharders,Endpoints.FILE_STATS_ENDPOINT ,{ allocation: id });
     },
 
     /** Faucets Apis */
@@ -452,7 +490,6 @@ async function submitTransaction(ae, toClientId, val, note, transaction_type) {
     data.to_client_id = toClientId;
     data.hash = hash;
     data.signature = sig.serializeToHexStr();
-    
     return new Promise(function (resolve, reject) {
         utils.doParallelPostReqToAllMiners(miners, Endpoints.PUT_TRANSACTION, data)
             .then((response) => {
