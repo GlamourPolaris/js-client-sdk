@@ -258,17 +258,17 @@ module.exports = {
         // return getInformationFromRandomSharder(Endpoints.GET_SCSTATE, { key: keyName+":"+keyvalue, sc_address: StorageSmartContractAddress  });
     },
 
-    allocateStorage: function allocateStorage(ae, num_writes, data_shards, parity_shards, size = 2147483648, expiration_date = 2592000) {
+    allocateStorage: function allocateStorage(ae, data_shards = 2, parity_shards = 2, size = 2147483648, expiration_date = 2592000, num_writes = 0) {
         const payload = {
             name: "new_allocation_request",
             input: {
-                num_writes: num_writes,
                 data_shards: data_shards,
                 parity_shards: parity_shards,
                 owner_id: ae.id,
                 owner_public_key: ae.public_key,
                 size: size,
-                expiration_date: expiration_date
+                expiration_date: expiration_date,
+                num_writes: num_writes
             }
         }
         return this.executeSmartContract(ae, undefined, JSON.stringify(payload));
@@ -300,7 +300,7 @@ module.exports = {
             input: {
                 duration: `${durationHr}h${durationMin}m`
             }
-        }        
+        }
         return this.executeSmartContract(ae, InterestPoolSmartContractAddress, JSON.stringify(payload), val)
     },
 
