@@ -341,7 +341,7 @@ module.exports = {
 
     getFileMetaDataFromPath: async (allocation_id, blobber, path, client_id) => {
         return new Promise(async function (resolve, reject) {
-            var blobber_url;
+            let blobber_url;
             blobber_url = blobber + Endpoints.FILE_META_ENDPOINT + allocation_id;
             const response = await utils.postReqToBlobber(blobber_url, {path: path}, client_id);
             if (response.status===200){
@@ -355,7 +355,7 @@ module.exports = {
 
     getFileStatsFromPath: async (allocation_id, blobber, path, client_id) => {
         return new Promise(async function (resolve, reject) {
-            var blobber_url;
+            let blobber_url;
             blobber_url = blobber + Endpoints.FILE_STATS_ENDPOINT + allocation_id;
             const response = await utils.postReqToBlobber(blobber_url, {path: path}, client_id);
             if (response.status===200){
@@ -367,13 +367,31 @@ module.exports = {
 
     },
 
+    commitMetaTransaction: (ae, crudType, metadata) => {
+        const { name, type, path, lookup_hash, actual_file_hash, mimetype, size, encrypted_key } = metadata
+        const payload = {
+                CrudType: crudType,
+                MetaData:{
+                    Name: name,
+                    Type: type,
+                    Path: path,
+                    LookupHash: lookup_hash,
+                    Hash: actual_file_hash,
+                    MimeType: mimetype,
+                    Size: size,
+                    EncryptedKey: encrypted_key
+            }
+        }
+        return submitTransaction(ae, '', 0, JSON.stringify(payload));
+    },
+
     getAllocationDirStructure: function () {
 
     },
 
     /** Faucets Apis */
 
-    executeFaucetSmartContract : function(ae,methodName, input, transactionValue) {
+    executeFaucetSmartContract : function(ae, methodName, input, transactionValue) {
         const payload = {
             name: methodName,
             input: input
@@ -474,7 +492,7 @@ async function submitTransaction(ae, toClientId, val, note, transaction_type) {
     const ts = Math.floor(new Date().getTime() / 1000);
 
     const hashdata = ts + ":" + ae.id + ":" + toClientId + ":" + val + ":" + hashPayload;
-    
+
     const hash = sha3.sha3_256(hashdata);
     const bytehash = utils.hexStringToByte(hash);
     const sec = new bls.SecretKey();
