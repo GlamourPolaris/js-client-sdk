@@ -367,8 +367,9 @@ module.exports = {
         });
     },
 
-    commitMetaTransaction: (ae, crudType, metadata) => {
-        const { name, type, path, lookup_hash, actual_file_hash, mimetype, size, encrypted_key } = metadata
+    commitMetaTransaction: async function (ae, crudType, allocation_id, path) {
+        const metadata = await this.getFileMetaDataFromPath(allocation_id, path, ae.id)
+        const { name, type, lookup_hash, actual_file_hash, mimetype, size, encrypted_key } = metadata
         const payload = {
                 CrudType: crudType,
                 MetaData:{
