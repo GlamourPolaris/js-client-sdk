@@ -339,10 +339,11 @@ module.exports = {
 
     },
 
-    getFileMetaDataFromPath: async (allocation_id, blobber, path, client_id) => {
+    getFileMetaDataFromPath: async function (allocation_id, path, client_id){
+        const completeAllocationInfo = await this.allocationInfo(allocation_id);
+        const blobber = completeAllocationInfo.blobbers[0].url;
         return new Promise(async function (resolve, reject) {
-            let blobber_url;
-            blobber_url = blobber + Endpoints.FILE_META_ENDPOINT + allocation_id;
+            const blobber_url = blobber + Endpoints.FILE_META_ENDPOINT + allocation_id;
             const response = await utils.postReqToBlobber(blobber_url, {path: path}, client_id);
             if (response.status===200){
                 resolve(response.data)
@@ -350,13 +351,13 @@ module.exports = {
                 reject('Not able to fetch file details from blobbers')
             }
         });
-
     },
 
-    getFileStatsFromPath: async (allocation_id, blobber, path, client_id) => {
+    getFileStatsFromPath: async function (allocation_id, path, client_id){
+        const completeAllocationInfo = await this.allocationInfo(allocation_id);
+        const blobber = completeAllocationInfo.blobbers[0].url;
         return new Promise(async function (resolve, reject) {
-            let blobber_url;
-            blobber_url = blobber + Endpoints.FILE_STATS_ENDPOINT + allocation_id;
+            const blobber_url = blobber + Endpoints.FILE_STATS_ENDPOINT + allocation_id;
             const response = await utils.postReqToBlobber(blobber_url, {path: path}, client_id);
             if (response.status===200){
                 resolve(response.data)
@@ -364,7 +365,6 @@ module.exports = {
                 reject('Not able to fetch file stats from blobbers')
             }
         });
-
     },
 
     commitMetaTransaction: (ae, crudType, metadata) => {
@@ -487,7 +487,7 @@ function createWallet() {
 
 
 async function submitTransaction(ae, toClientId, val, note, transaction_type) {
-    
+
     const hashPayload = sha3.sha3_256(note);
     const ts = Math.floor(new Date().getTime() / 1000);
 
