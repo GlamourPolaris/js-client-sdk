@@ -144,12 +144,31 @@ module.exports = {
         });
     },
 
-    postReqToBlobber: function postReqToBlobber(url, data, clientId) {
+    postReqToBlobber: function postReqToBlobber(url, data, params, clientId) {
         return axios({
             method: 'post',
-            url: `https://cors-anywhere.herokuapp.com/${url}?path=${data.path}`,
+            url: `https://cors-anywhere.herokuapp.com/${url}`,
+            params: params,
+            body: data,
             headers: {
                 'X-App-Client-ID': clientId
+            }
+        }).then((response)=> {
+            return response
+        }).catch((error)=> {
+            return error
+        })
+    },
+
+    deleteReqToBlobber: function deleteReqToBlobber(url, data, params, clientId) {
+        return axios({
+            method: 'delete',
+            url: `https://cors-anywhere.herokuapp.com/${url}`,
+            params: params,
+            body: data,
+            headers: {
+                'X-App-Client-ID': clientId,
+                'Content-Type': 'multipart/form-data'
             }
         }).then((response)=> {
             return response

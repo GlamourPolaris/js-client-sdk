@@ -58,7 +58,10 @@ const Endpoints = {
     ALLOCATION_FILE_LIST: "/v1/file/list/",
     FILE_STATS_ENDPOINT: "/v1/file/stats/",
     OBJECT_TREE_ENDPOINT: "/v1/file/objecttree/",
-    FILE_META_ENDPOINT: "/v1/file/meta/"
+    FILE_META_ENDPOINT: "/v1/file/meta/",
+    RENAME_ENDPOINT: "/v1/file/rename/",
+    COPY_ENDPOINT: "/v1/file/copy/",
+    UPLOAD_ENDPOINT: "/v1/file/upload/"
 }
 
 const TransactionType = {
@@ -344,7 +347,7 @@ module.exports = {
         const blobber = completeAllocationInfo.blobbers[0].url;
         return new Promise(async function (resolve, reject) {
             const blobber_url = blobber + Endpoints.FILE_META_ENDPOINT + allocation_id;
-            const response = await utils.postReqToBlobber(blobber_url, {path: path}, client_id);
+            const response = await utils.postReqToBlobber(blobber_url, {}, {path: path}, client_id);
             if (response.status===200){
                 resolve(response.data)
             }else{
@@ -358,7 +361,7 @@ module.exports = {
         const blobber = completeAllocationInfo.blobbers[0].url;
         return new Promise(async function (resolve, reject) {
             const blobber_url = blobber + Endpoints.FILE_STATS_ENDPOINT + allocation_id;
-            const response = await utils.postReqToBlobber(blobber_url, {path: path}, client_id);
+            const response = await utils.postReqToBlobber(blobber_url, {}, {path: path}, client_id);
             if (response.status===200){
                 resolve(response.data)
             }else{
@@ -384,6 +387,53 @@ module.exports = {
             }
         }
         return submitTransaction(ae, '', 0, JSON.stringify(payload));
+    },
+
+    renameObject: async function (allocation_id, path, new_name, client_id) {
+        const completeAllocationInfo = await this.allocationInfo(allocation_id);
+        const associatedBlobbers = completeAllocationInfo.blobbers.map(
+            (detail) => { 
+                return detail.url
+            })
+        return new Promise(async function (resolve, reject) {
+            for (let blobber of associatedBlobbers){
+                const blobber_url = blobber + Endpoints.RENAME_ENDPOINT + allocation_id;
+                const response = await utils.postReqToBlobber(blobber_url,
+                    {
+                       path: path,
+                       new_name: new_name,
+                       connection_id: Math.floor(Math.random() * 10000000000).toString()
+                    }, {}, client_id);
+                if (response.status===200){
+                    resolve(response.data)
+                }else{
+                    reject('Unable to rename object')
+                }
+            }
+        });
+    },
+
+    deleteObject: async function (allocation_id, path, client_id) {
+        const completeAllocationInfo = await this.allocationInfo(allocation_id);
+        const associatedBlobbers = completeAllocationInfo.blobbers.map(
+            (detail) => { 
+                return detail.url
+            })
+        return new Promise(async function (resolve, reject) {
+            for (let blobber of associatedBlobbers){
+                const blobber_url = blobber + Endpoints.UPLOAD_ENDPOINT + allocation_id;
+                const response = await utils.deleteReqToBlobber(blobber_url,
+                    {
+                       path: path,
+                       connection_id: Math.floor(Math.random() * 10000000000).toString()
+                    }, {}, client_id);
+                if (response.status===200){
+                    resolve(response.data)
+                }else{
+                    reject('Unable to delete object')
+                }
+            }
+        });
     },
 
     getAllocationDirStructure: function () {
