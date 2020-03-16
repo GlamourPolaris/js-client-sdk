@@ -396,13 +396,14 @@ module.exports = {
                 return detail.url
             })
         return new Promise(async function (resolve, reject) {
+            const connection_id = Math.floor(Math.random() * 10000000000).toString();
             for (let blobber of associatedBlobbers){
                 const blobber_url = blobber + Endpoints.RENAME_ENDPOINT + allocation_id;
                 const response = await utils.postReqToBlobber(blobber_url,
                     {
                        path: path,
                        new_name: new_name,
-                       connection_id: Math.floor(Math.random() * 10000000000).toString()
+                       connection_id: connection_id
                     }, {}, client_id);
                 if (response.status===200){
                     resolve(response.data)
@@ -420,12 +421,13 @@ module.exports = {
                 return detail.url
             })
         return new Promise(async function (resolve, reject) {
+            const connection_id = Math.floor(Math.random() * 10000000000).toString();
             for (let blobber of associatedBlobbers){
                 const blobber_url = blobber + Endpoints.UPLOAD_ENDPOINT + allocation_id;
                 const response = await utils.deleteReqToBlobber(blobber_url,
                     {
                        path: path,
-                       connection_id: Math.floor(Math.random() * 10000000000).toString()
+                       connection_id: connection_id
                     }, {}, client_id);
                 if (response.status===200){
                     resolve(response.data)
