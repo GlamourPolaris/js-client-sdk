@@ -14,7 +14,16 @@ First  ```import / require ``` the library from github <https://github.com/0chai
 import jsClientSdk from 'js-client';
 ```
 ## Initialize
-Before any function in the SDK to be called, the *init* function with the cluster configuration should be called. 
+Before any function in the SDK to be called, the *init* function with the cluster configuration and bls-wasm instance should be called. 
+
+## bls-wasm dependency
+
+While initialising js-client-sdk, a bls instance is to be passed. bls can be installed via npm using the below command:
+```
+npm install bls-wasm
+```
+Github Repository:
+```https://github.com/herumi/bls-wasm```
 
 **Input Parameters**
 
@@ -24,31 +33,43 @@ config -- json string containig cluster configuration
 
 None
 
-The below code shows an example of initiailizing the SDK with *devb* testnet cluster. 
+The below code shows an example of initiailizing the SDK with *0chain-local-cluster*. 
 
 ```
 var config = {
-    "miners" : [
-        "http://virb.devb.testnet-0chain.net:7071/",
-        "http://vira.devb.testnet-0chain.net:7071/",
-        "http://cala.devb.testnet-0chain.net:7071/",
-        "http://calb.devb.testnet-0chain.net:7071/"  
-    ],
-    "sharders" : [
-        "http://cala.devb.testnet-0chain.net:7171/",
-        "http://vira.devb.testnet-0chain.net:7171/"  
-    ],   
-    "chain_id" :   "0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe",
-    "clusterName" : "devb",
-    "transaction_timeout" : 20,
-    "state " : true
+    "miners": [
+    "http://one.devnet-0chain.net:31071/",
+    "http://one.devnet-0chain.net:31072/",
+    "http://one.devnet-0chain.net:31073/",
+    "http://one.devnet-0chain.net:31074/",
+    "http://one.devnet-0chain.net:31075/",
+    "http://one.devnet-0chain.net:31076/",
+    "http://one.devnet-0chain.net:31077/",
+    "http://one.devnet-0chain.net:31078/",
+    "http://one.devnet-0chain.net:31079/"
+  ],
+  "sharders": [
+    "http://one.devnet-0chain.net:31171/",
+    "http://one.devnet-0chain.net:31172/",
+    "http://one.devnet-0chain.net:31173/",
+    "http://one.devnet-0chain.net:31174/",
+    "http://one.devnet-0chain.net:31175/",
+    "http://one.devnet-0chain.net:31176/",
+    "http://one.devnet-0chain.net:31177/",
+    "http://one.devnet-0chain.net:31178/",
+    "http://one.devnet-0chain.net:31179/"
+  ],
+  "chain_id" :   "0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe",
+  "clusterName" : "0chain-local-cluster",
+  "transaction_timeout" : 20,
+  "state " : true
 }
-jsClientSdk.init(config)
+jsClientSdk.init(config, bls)
 ```
-To use local cluster, call init with no configuration
+To use local cluster, call init with bls-wasm instance configuration
 
 ```
-jsClientSdk.init()
+jsClientSdk.init(bls)
 ```
 ## registerClient
 
