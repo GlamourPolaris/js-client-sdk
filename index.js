@@ -61,7 +61,9 @@ const Endpoints = {
     FILE_META_ENDPOINT: "/v1/file/meta/",
     RENAME_ENDPOINT: "/v1/file/rename/",
     COPY_ENDPOINT: "/v1/file/copy/",
-    UPLOAD_ENDPOINT: "/v1/file/upload/"
+    UPLOAD_ENDPOINT: "/v1/file/upload/",
+    COMMIT_ENDPOINT: "/v1/connection/commit/",
+    COPY_ENDPOINT: "/v1/file/copy/"
 }
 
 const TransactionType = {
@@ -395,22 +397,24 @@ module.exports = {
             (detail) => { 
                 return detail.url
             })
-        return new Promise(async function (resolve, reject) {
+        return new Promise(async (resolve, reject) => {
             const connection_id = Math.floor(Math.random() * 10000000000).toString();
+            const renameResponses = []
             for (let blobber of associatedBlobbers){
                 const blobber_url = blobber + Endpoints.RENAME_ENDPOINT + allocation_id;
-                const response = await utils.postReqToBlobber(blobber_url,
+                const response = await utils.renameReqToBlobber(blobber_url,
                     {
                        path: path,
                        new_name: new_name,
                        connection_id: connection_id
-                    }, {}, client_id);
-                if (response.status===200){
-                    resolve(response.data)
-                }else{
-                    reject('Unable to rename object')
+                    }, {}, client_id)
+                renameResponses.push(response)
                 }
+                // await this.commitBlobber(completeAllocationInfo, parsedResponse.size, client_id)
+            if (renameResponses.length === associatedBlobbers.length){
+                resolve(JSON.parse(renameResponses))
             }
+            reject('Renaming unsuccessful')
         });
     },
 
@@ -422,6 +426,7 @@ module.exports = {
             })
         return new Promise(async function (resolve, reject) {
             const connection_id = Math.floor(Math.random() * 10000000000).toString();
+            const deleteResponses = []
             for (let blobber of associatedBlobbers){
                 const blobber_url = blobber + Endpoints.UPLOAD_ENDPOINT + allocation_id;
                 const response = await utils.deleteReqToBlobber(blobber_url,
@@ -429,14 +434,68 @@ module.exports = {
                        path: path,
                        connection_id: connection_id
                     }, {}, client_id);
-                if (response.status===200){
-                    resolve(response.data)
-                }else{
-                    reject('Unable to delete object')
-                }
+                deleteResponses.push(response)
             }
+            if (deleteResponses.length === associatedBlobbers.length){
+                resolve(JSON.parse(deleteResponses))
+            }
+            reject('Deleting unsuccessful')
         });
     },
+
+    // copyObject: async function (allocation_id, path, new_path, client_id) {
+    //     const completeAllocationInfo = await this.allocationInfo(allocation_id);
+    //     const associatedBlobbers = completeAllocationInfo.blobbers.map(
+    //         (detail) => { 
+    //             return detail.url
+    //         })
+    //     return new Promise(async (resolve, reject) => {
+    //         const connection_id = Math.floor(Math.random() * 10000000000).toString();
+    //         const copyResponses = []
+    //         for (let blobber of associatedBlobbers){
+    //             const blobber_url = blobber + Endpoints.COPY_ENDPOINT + allocation_id;
+    //             const response = await utils.renameReqToBlobber(blobber_url,
+    //                 {
+    //                    path: path,
+    //                    new_path: new_path,
+    //                    connection_id: connection_id
+    //                 }, {}, client_id)
+    //             copyResponses.push(response)
+    //             }
+    //             // await this.commitBlobber(completeAllocationInfo, parsedResponse.size, client_id)
+    //         if (renameResponses.length === associatedBlobbers.length){
+    //             resolve(JSON.parse(renameResponses))
+    //         }
+    //         reject('Renaming unsuccessful')
+    //     });
+    // },
+
+    // commitBlobber: async function(allocation_info, size, clientId, count){
+    //     const associatedBlobberIds = allocation_info.blobbers.map(
+    //         (detail) => { 
+    //             return detail.id
+    //         })
+    //     const associatedBlobberUrls = allocation_info.blobbers.map(
+    //         (detail) => { 
+    //             return detail.url
+    //         })          
+    //     payload = {
+    //         AllocationID: allocation_info.id,
+    //         Size: size,
+    //         BlobberID: associatedBlobberIds[count],
+    //         Timestamp: Date.now(),
+    //         ClientID: clientId
+    //     }
+    //     const blobber_url = associatedBlobberUrls[count] + Endpoints.COMMIT_ENDPOINT + allocation_info.id;
+    //     console.log('-----------BLOBBER URL-----------', associatedBlobberUrls[count])
+    //     const response = await utils.postReqToBlobber(blobber_url, payload, {}, client_id);
+    //     if (response.status===200){
+    //         logger.info('Blobber commit successful!')
+    //         resolve(response.data)
+    //     }else{
+    //         reject('Unable to delete object')
+    //     }
+    // },
 
     getAllocationDirStructure: function () {
 

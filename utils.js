@@ -22,6 +22,7 @@ var JSONbig = require('json-bigint');
 const axios = require('axios');
 const PromiseAll = require('promises-all');
 var BlueBirdPromise = require("bluebird");
+var rp = require('request-promise');
 
 const consensusPercentage = 20;
 
@@ -148,11 +149,12 @@ module.exports = {
         return axios({
             method: 'post',
             url: `https://cors-anywhere.herokuapp.com/${url}`,
-            params: params,
-            body: data,
             headers: {
-                'X-App-Client-ID': clientId
-            }
+                'X-App-Client-ID': clientId,
+                'Content-Type': 'application/x-www-form-urlencoded' 
+            },
+            params: params,
+            body: data
         }).then((response)=> {
             return response
         }).catch((error)=> {
@@ -161,19 +163,44 @@ module.exports = {
     },
 
     deleteReqToBlobber: function deleteReqToBlobber(url, data, params, clientId) {
-        return axios({
-            method: 'delete',
-            url: `https://cors-anywhere.herokuapp.com/${url}`,
-            params: params,
-            body: data,
+        const { path, connection_id } = data
+        const form = { 'path': path, 'connection_id': connection_id }
+        var options = {
+            method: 'DELETE',
+            uri: `https://cors-anywhere.herokuapp.com/${url}`,
             headers: {
                 'X-App-Client-ID': clientId,
-                'Content-Type': 'multipart/form-data'
+                'Content-Type': 'application/x-www-form-urlencoded'
+                },
+            qs: form
+        };
+        return rp(options).then(function (resp){
+            return resp
+        }).catch(function (err){
+            return err
+        })
+    },
+
+    renameReqToBlobber: function renameReqToBlobber(url, data, params, clientId){
+        const {path, new_name, connection_id} = data
+        const options = {
+        method: 'POST',
+        uri: `https://cors-anywhere.herokuapp.com/${url}`,
+        headers: {
+            'X-App-Client-ID': clientId,
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        form: {
+            'path': path,
+            'new_name': new_name,
+            'connection_id': connection_id
             }
-        }).then((response)=> {
-            return response
-        }).catch((error)=> {
-            return error
+        };
+
+        return rp(options).then(function (resp){
+            return resp
+        }).catch(function (err){
+            return err
         })
     },
 
