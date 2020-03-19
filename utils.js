@@ -126,7 +126,21 @@ module.exports = {
         return sha3.sha3_256(allocationId + ":" + path + ":" + fileName + ":" + partNum);
     },
 
-
+    parseWalletInfo: function (ae){
+        return {
+            "client_id": ae.id,
+            "client_key": ae.public_key,
+            "keys": [
+                {
+                    "public_key": ae.public_key,
+                    "private_key": ae.secretKey
+                }
+            ],
+            "mnemonics": "bar figure position super change stage beach version word raise busy problem misery poet crystal gravity gospel fun become bring ready width object glance",
+            "version": "1.0",
+            "date_created": ae.timeStamp
+        }  
+    },
     /*
        A utility function to make a post request.
        url: Complete URL along with path to where the post request is to be sent
@@ -137,7 +151,19 @@ module.exports = {
         const self = this;
         return axios({
             method: 'post',
-            url: url,
+            url: `https://cors-anywhere.herokuapp.com/${url}`,
+            data: data,
+            transformResponse: function (responseData) {
+                return self.parseJson(responseData)
+            }
+        });
+    },
+
+    putReq: function putReq(url, data) {
+        const self = this;
+        return axios({
+            method: 'put',
+            url: `https://cors-anywhere.herokuapp.com/${url}`,
             data: data,
             transformResponse: function (responseData) {
                 return self.parseJson(responseData)
