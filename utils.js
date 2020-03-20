@@ -176,8 +176,8 @@ module.exports = {
         const self = this;
         return axios({
             method: 'delete',
-            url: `https://cors-anywhere.herokuapp.com/${url}`,
             // url: url,
+            url: url,
             data: data,
             transformResponse: function (responseData) {
                 return self.parseJson(responseData)
@@ -199,49 +199,6 @@ module.exports = {
             return response
         }).catch((error)=> {
             return error
-        })
-    },
-
-    deleteReqToBlobber: function deleteReqToBlobber(url, data, params, clientId) {
-        const { path, connection_id } = data
-        const form = { 'path': path, 'connection_id': connection_id }
-        var options = {
-            method: 'DELETE',
-            uri: `https://cors-anywhere.herokuapp.com/${url}`,
-            headers: {
-                'X-App-Client-ID': clientId,
-                'Content-Type': 'application/x-www-form-urlencoded'
-                },
-            qs: form
-        };
-        return rp(options).then(function (resp){
-            return resp
-        }).catch(function (err){
-            return err
-        })
-    },
-
-    renameReqToBlobber: function renameReqToBlobber(url, data, params, clientId){
-        const {path, new_name, connection_id} = data
-        const options = {
-        method: 'POST',
-        // uri: `https://cors-anywhere.herokuapp.com/${url}`,
-        uri: url,
-        headers: {
-            'X-App-Client-ID': clientId,
-            'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        form: {
-            'path': path,
-            'new_name': new_name,
-            'connection_id': connection_id
-            }
-        };
-
-        return rp(options).then(function (resp){
-            return resp
-        }).catch(function (err){
-            return err
         })
     },
 

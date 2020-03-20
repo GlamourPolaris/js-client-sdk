@@ -435,16 +435,11 @@ module.exports = {
     deleteObject: async function (allocation_id, path, client_json) {
         const url = proxyServer + Endpoints.PROXY_SERVER_DELETE_ENDPOINT
         const parsed_client_json = utils.parseWalletInfo(client_json)
-        const payload = {
-            allocation: allocation_id,
-            remote_path: path,
-            client_json: JSON.stringify(parsed_client_json)
-        }
-        // const formData = new FormData();
-        // formData.append('allocation', allocation_id);
-        // formData.append('remote_path', path);
-        // formData.append('client_json', JSON.stringify(parsed_client_json));
-        const response = await utils.delReq(url, payload);
+        const formData = new FormData();
+        formData.append('allocation', allocation_id);
+        formData.append('remote_path', path);
+        formData.append('client_json', JSON.stringify(parsed_client_json));
+        const response = await utils.delReq(url, formData);
         return response
     },
 
@@ -462,13 +457,25 @@ module.exports = {
 
     shareObject: async function (allocation_id, path, client_json) {
         const url = proxyServer + Endpoints.PROXY_SERVER_SHARE_ENDPOINT
-        const parsed_client_json = utils.parseWalletInfo(client_json)
-        console.log('--------inside share object----------',parsed_client_json)
+        const parsed_client_json = utils.parseWalletInfo(client_json)        
+        const params = {
+            allocation: allocation_id,
+            remote_path: path,
+            client_json: parsed_client_json
+        }
+        const response = await utils.getReq(url, params);
+        return response
+    },
+
+    moveObject: async function (allocation_id, path, client_json) {
+        const url = proxyServer + Endpoints.PROXY_SERVER_MOVE_ENDPOINT
+        const parsed_client_json = utils.parseWalletInfo(client_json)   
         const formData = new FormData();
         formData.append('allocation', allocation_id);
         formData.append('remote_path', path);
+        formData.append('dest_path', dest);
         formData.append('client_json', JSON.stringify(parsed_client_json));
-        const response = await utils.postReq(url, formData);
+        const response = await utils.putReq(url, formData);
         return response
     },
 
