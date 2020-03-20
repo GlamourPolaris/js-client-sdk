@@ -28,7 +28,7 @@ var models = require('./models');
 var miners, sharders, clusterName, version;
 let bls;
 
-const proxyServer = "http://37aeb9c2.ngrok.io"
+const proxyServer = "http://localhost:9082"
 const StorageSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7";
 const FaucetSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3";
 const InterestPoolSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9";
@@ -420,123 +420,57 @@ module.exports = {
         return response
     },
 
-    renameObject: async function (allocation_id, path, new_name, ae) {
+    renameObject: async function (allocation_id, path, new_name, client_json) {
         const url = proxyServer + Endpoints.PROXY_SERVER_RENAME_ENDPOINT
-        const walletInfo = utils.parseWalletInfo(ae)
-        const payload = {
-            allocation: allocation_id,
-            client_json: JSON.stringify(walletInfo),
-            remote_path: path,
-            new_name: new_name
-        }    
-        const response = await utils.putReq(url, payload);
+        const parsed_client_json = utils.parseWalletInfo(client_json)
+        const formData = new FormData();
+        formData.append('allocation', allocation_id);
+        formData.append('remote_path', path);
+        formData.append('new_name', new_name);
+        formData.append('client_json', JSON.stringify(parsed_client_json));
+        const response = await utils.putReq(url, formData);
         return response
     },
 
-    deleteObject: async function (allocation_id, path, client_id) {
-        const completeAllocationInfo = await this.allocationInfo(allocation_id);
-        const associatedBlobbers = completeAllocationInfo.blobbers.map(
-            (detail) => { 
-                return detail.url
-            })
-        return new Promise(async function (resolve, reject) {
-            const connection_id = Math.floor(Math.random() * 10000000000).toString();
-            const deleteResponses = []
-            for (let blobber of associatedBlobbers){
-                const blobber_url = blobber + Endpoints.UPLOAD_ENDPOINT + allocation_id;
-                const response = await utils.deleteReqToBlobber(blobber_url,
-                    {
-                       path: path,
-                       connection_id: connection_id
-                    }, {}, client_id);
-                deleteResponses.push(response)
-            }
-            if (deleteResponses.length === associatedBlobbers.length){
-                resolve(JSON.parse(deleteResponses))
-            }
-            reject('Deleting unsuccessful')
-        });
+    deleteObject: async function (allocation_id, path, client_json) {
+        const url = proxyServer + Endpoints.PROXY_SERVER_DELETE_ENDPOINT
+        const parsed_client_json = utils.parseWalletInfo(client_json)
+        const payload = {
+            allocation: allocation_id,
+            remote_path: path,
+            client_json: JSON.stringify(parsed_client_json)
+        }
+        // const formData = new FormData();
+        // formData.append('allocation', allocation_id);
+        // formData.append('remote_path', path);
+        // formData.append('client_json', JSON.stringify(parsed_client_json));
+        const response = await utils.delReq(url, payload);
+        return response
     },
 
-    copyObject: async function (allocation_id, path, dest, client_id) {
-        const completeAllocationInfo = await this.allocationInfo(allocation_id);
-        const associatedBlobbers = completeAllocationInfo.blobbers.map(
-            (detail) => { 
-                return detail.url
-            })
-        return new Promise(async (resolve, reject) => {
-            const connection_id = Math.floor(Math.random() * 10000000000).toString();
-            const copyResponses = []
-            for (let blobber of associatedBlobbers){
-                const blobber_url = blobber + Endpoints.COPY_ENDPOINT + allocation_id;
-                const response = await utils.renameReqToBlobber(blobber_url,
-                    {
-                       path: path,
-                       dest: dest,
-                       connection_id: connection_id
-                    }, {}, client_id)
-                copyResponses.push(response)
-                }
-                // await this.commitBlobber(completeAllocationInfo, parsedResponse.size, client_id)
-            if (renameResponses.length === associatedBlobbers.length){
-                resolve(JSON.parse(renameResponses))
-            }
-            reject('Renaming unsuccessful')
-        });
+    copyObject: async function (allocation_id, path, dest, client_json) {
+        const url = proxyServer + Endpoints.PROXY_SERVER_COPY_ENDPOINT
+        const parsed_client_json = utils.parseWalletInfo(client_json)
+        const formData = new FormData();
+        formData.append('allocation', allocation_id);
+        formData.append('remote_path', path);
+        formData.append('dest_path', dest);
+        formData.append('client_json', JSON.stringify(parsed_client_json));
+        const response = await utils.putReq(url, formData);
+        return response
     },
 
-    shareObject: async function (allocation_id, path, client_id) {
-        const completeAllocationInfo = await this.allocationInfo(allocation_id);
-        const associatedBlobbers = completeAllocationInfo.blobbers.map(
-            (detail) => { 
-                return detail.url
-            })
-        return new Promise(async (resolve, reject) => {
-            const connection_id = Math.floor(Math.random() * 10000000000).toString();
-            const copyResponses = []
-            for (let blobber of associatedBlobbers){
-                const blobber_url = blobber + Endpoints.COPY_ENDPOINT + allocation_id;
-                const response = await utils.renameReqToBlobber(blobber_url,
-                    {
-                       path: path,
-                       connection_id: connection_id
-                    }, {}, client_id)
-                copyResponses.push(response)
-                }
-                // await this.commitBlobber(completeAllocationInfo, parsedResponse.size, client_id)
-            if (renameResponses.length === associatedBlobbers.length){
-                resolve(JSON.parse(renameResponses))
-            }
-            reject('Renaming unsuccessful')
-        });
+    shareObject: async function (allocation_id, path, client_json) {
+        const url = proxyServer + Endpoints.PROXY_SERVER_SHARE_ENDPOINT
+        const parsed_client_json = utils.parseWalletInfo(client_json)
+        console.log('--------inside share object----------',parsed_client_json)
+        const formData = new FormData();
+        formData.append('allocation', allocation_id);
+        formData.append('remote_path', path);
+        formData.append('client_json', JSON.stringify(parsed_client_json));
+        const response = await utils.postReq(url, formData);
+        return response
     },
-
-    // commitBlobber: async function(allocation_info, size, clientId, count){
-    //     const associatedBlobberIds = allocation_info.blobbers.map(
-    //         (detail) => { 
-    //             return detail.id
-    //         })
-    //     const associatedBlobberUrls = allocation_info.blobbers.map(
-    //         (detail) => { 
-    //             return detail.url
-    //         })          
-    //     payload = {
-    //         AllocationID: allocation_info.id,
-    //         Size: size,
-    //         BlobberID: associatedBlobberIds[count],
-    //         Timestamp: Date.now(),
-    //         ClientID: clientId
-    //     }
-    //     const blobber_url = associatedBlobberUrls[count] + Endpoints.COMMIT_ENDPOINT + allocation_info.id;
-    //     console.log('-----------BLOBBER URL-----------', associatedBlobberUrls[count])
-    //     const response = await utils.postReqToBlobber(blobber_url, payload, {}, client_id);
-    //     if (response.status===200){
-    //         logger.info('Blobber commit successful!')
-    //         resolve(response.data)
-    //     }else{
-    //         reject('Unable to delete object')
-    //     }
-    // },
 
     getAllocationDirStructure: function () {
 

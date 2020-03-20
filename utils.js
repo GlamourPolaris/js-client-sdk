@@ -23,6 +23,7 @@ const axios = require('axios');
 const PromiseAll = require('promises-all');
 var BlueBirdPromise = require("bluebird");
 var rp = require('request-promise');
+const moment = require('moment')
 
 const consensusPercentage = 20;
 
@@ -138,7 +139,7 @@ module.exports = {
             ],
             "mnemonics": "bar figure position super change stage beach version word raise busy problem misery poet crystal gravity gospel fun become bring ready width object glance",
             "version": "1.0",
-            "date_created": ae.timeStamp
+            "date_created": moment.unix(ae.timeStamp).format('YYYY-MM-DD HH:mm:ss')
         }  
     },
     /*
@@ -151,7 +152,7 @@ module.exports = {
         const self = this;
         return axios({
             method: 'post',
-            url: `https://cors-anywhere.herokuapp.com/${url}`,
+            url: url,
             data: data,
             transformResponse: function (responseData) {
                 return self.parseJson(responseData)
@@ -163,7 +164,20 @@ module.exports = {
         const self = this;
         return axios({
             method: 'put',
+            url: url,
+            data: data,
+            transformResponse: function (responseData) {
+                return self.parseJson(responseData)
+            }
+        });
+    },
+
+    delReq: function delReq(url, data) {
+        const self = this;
+        return axios({
+            method: 'delete',
             url: `https://cors-anywhere.herokuapp.com/${url}`,
+            // url: url,
             data: data,
             transformResponse: function (responseData) {
                 return self.parseJson(responseData)
@@ -211,7 +225,8 @@ module.exports = {
         const {path, new_name, connection_id} = data
         const options = {
         method: 'POST',
-        uri: `https://cors-anywhere.herokuapp.com/${url}`,
+        // uri: `https://cors-anywhere.herokuapp.com/${url}`,
+        uri: url,
         headers: {
             'X-App-Client-ID': clientId,
             'Content-Type': 'application/x-www-form-urlencoded'
