@@ -25,10 +25,9 @@ const utils = require('./utils');
 var models = require('./models');
 "use strict";
 
-var miners, sharders, clusterName, version;
+var miners, proxyServerUrl, sharders, clusterName, version;
 let bls;
 
-const proxyServer = "http://localhost:9082"
 const StorageSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7";
 const FaucetSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3";
 const InterestPoolSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9";
@@ -113,6 +112,7 @@ module.exports = {
                 "sharders": [
                     "http://localhost:7171/"
                 ],
+                "proxyServerUrl": "http://localhost:9082",
                 "transaction_timeout": 15,
                 "clusterName": "local"
             };
@@ -123,6 +123,7 @@ module.exports = {
         miners = config.miners;
         sharders = config.sharders;
         clusterName = config.clusterName;
+        proxyServerUrl = config.proxyServerUrl
         version = "0.8.0";
     },
 
@@ -422,7 +423,7 @@ module.exports = {
     },
     
     uploadObject: async function(payload){
-        const url = proxyServer + Endpoints.PROXY_SERVER_UPLOAD_ENDPOINT
+        const url = proxyServerUrl + Endpoints.PROXY_SERVER_UPLOAD_ENDPOINT
         const parsed_client_json = utils.parseWalletInfo(JSON.parse(payload.get('client_json')))
         payload.set('client_json', JSON.stringify(parsed_client_json))
         const response = await utils.postReq(url, payload);
@@ -430,7 +431,7 @@ module.exports = {
     },
 
     downloadObject: async function(allocation_id, path, client_json){
-        const url = proxyServer + Endpoints.PROXY_SERVER_DOWNLOAD_ENDPOINT
+        const url = proxyServerUrl + Endpoints.PROXY_SERVER_DOWNLOAD_ENDPOINT
         const parsed_client_json = utils.parseWalletInfo(client_json)
         const params = {
             allocation: allocation_id,
@@ -442,7 +443,7 @@ module.exports = {
     },
 
     renameObject: async function (allocation_id, path, new_name, client_json) {
-        const url = proxyServer + Endpoints.PROXY_SERVER_RENAME_ENDPOINT
+        const url = proxyServerUrl + Endpoints.PROXY_SERVER_RENAME_ENDPOINT
         const parsed_client_json = utils.parseWalletInfo(client_json)
         const formData = new FormData();
         formData.append('allocation', allocation_id);
@@ -454,7 +455,7 @@ module.exports = {
     },
 
     deleteObject: async function (allocation_id, path, client_json) {
-        const url = proxyServer + Endpoints.PROXY_SERVER_DELETE_ENDPOINT
+        const url = proxyServerUrl + Endpoints.PROXY_SERVER_DELETE_ENDPOINT
         const parsed_client_json = utils.parseWalletInfo(client_json)
         const formData = new FormData();
         formData.append('allocation', allocation_id);
@@ -465,7 +466,7 @@ module.exports = {
     },
 
     copyObject: async function (allocation_id, path, dest, client_json) {
-        const url = proxyServer + Endpoints.PROXY_SERVER_COPY_ENDPOINT
+        const url = proxyServerUrl + Endpoints.PROXY_SERVER_COPY_ENDPOINT
         const parsed_client_json = utils.parseWalletInfo(client_json)
         const formData = new FormData();
         formData.append('allocation', allocation_id);
@@ -477,7 +478,7 @@ module.exports = {
     },
 
     shareObject: async function (allocation_id, path, client_json) {
-        const url = proxyServer + Endpoints.PROXY_SERVER_SHARE_ENDPOINT
+        const url = proxyServerUrl + Endpoints.PROXY_SERVER_SHARE_ENDPOINT
         const parsed_client_json = utils.parseWalletInfo(client_json)        
         const params = {
             allocation: allocation_id,
@@ -489,7 +490,7 @@ module.exports = {
     },
 
     moveObject: async function (allocation_id, path, client_json) {
-        const url = proxyServer + Endpoints.PROXY_SERVER_MOVE_ENDPOINT
+        const url = proxyServerUrl + Endpoints.PROXY_SERVER_MOVE_ENDPOINT
         const parsed_client_json = utils.parseWalletInfo(client_json)   
         const formData = new FormData();
         formData.append('allocation', allocation_id);

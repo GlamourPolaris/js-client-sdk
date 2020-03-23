@@ -132,8 +132,8 @@ module.exports = {
         var data = buff.toString('ascii')
         return JSON.parse(data)
     },
-    
-    parseWalletInfo: function (ae){
+
+    parseWalletInfo: function (ae) {
         return {
             "client_id": ae.id,
             "client_key": ae.public_key,
@@ -146,7 +146,7 @@ module.exports = {
             "mnemonics": "bar figure position super change stage beach version word raise busy problem misery poet crystal gravity gospel fun become bring ready width object glance",
             "version": "1.0",
             "date_created": moment.unix(ae.timeStamp).format('YYYY-MM-DD HH:mm:ss')
-        }  
+        }
     },
     /*
        A utility function to make a post request.
@@ -181,7 +181,6 @@ module.exports = {
     delReq: function delReq(url, data) {
         return axios({
             method: 'delete',
-            // url: url,
             url: url,
             data: data
         });
@@ -193,13 +192,13 @@ module.exports = {
             url: `https://cors-anywhere.herokuapp.com/${url}`,
             headers: {
                 'X-App-Client-ID': clientId,
-                'Content-Type': 'application/x-www-form-urlencoded' 
+                'Content-Type': 'application/x-www-form-urlencoded'
             },
             params: params,
             body: data
-        }).then((response)=> {
+        }).then((response) => {
             return response
-        }).catch((error)=> {
+        }).catch((error) => {
             return error
         })
     },
@@ -358,5 +357,5 @@ module.exports = {
         });
     }
 
-    
+
 }
