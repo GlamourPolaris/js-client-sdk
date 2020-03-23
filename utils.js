@@ -173,15 +173,11 @@ module.exports = {
     },
 
     delReq: function delReq(url, data) {
-        const self = this;
         return axios({
             method: 'delete',
             // url: url,
             url: url,
-            data: data,
-            transformResponse: function (responseData) {
-                return self.parseJson(responseData)
-            }
+            data: data
         });
     },
 
@@ -215,6 +211,12 @@ module.exports = {
                 return self.parseJson(data)
             }
         });
+    },
+
+    getDownloadReq: function getDownloadReq(url, params) {
+        return axios.get(url, {
+            params: params
+        })
     },
 
     parseJson: function (jsonString) {

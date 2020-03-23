@@ -416,8 +416,8 @@ module.exports = {
             remote_path: path,
             client_json: parsed_client_json
         }
-        const response = await utils.getReq(url, params);
-        return response
+        const response = await utils.getDownloadReq(url, params);
+        return response.request.responseURL
     },
 
     renameObject: async function (allocation_id, path, new_name, client_json) {
