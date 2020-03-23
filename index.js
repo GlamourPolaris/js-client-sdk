@@ -380,21 +380,42 @@ module.exports = {
             }
         });
     },
+    
+    getFileMetaDataFromPathHash: async function (allocation_id, path_hash, client_id) {
+        const completeAllocationInfo = await this.allocationInfo(allocation_id);
+        const blobber = completeAllocationInfo.blobbers[0].url;
+        return new Promise(async function (resolve, reject) {
+            const blobber_url = blobber + Endpoints.FILE_META_ENDPOINT + allocation_id;
+            const response = await utils.postReqToBlobber(blobber_url, {}, { path_hash: path_hash }, client_id);
+            if (response.status === 200) {
+                resolve(response.data)
+            } else {
+                reject('Not able to fetch file details from blobbers')
+            }
+        });
+    },
 
-    commitMetaTransaction: async function (ae, crudType, allocation_id, path) {
-        const metadata = await this.getFileMetaDataFromPath(allocation_id, path, ae.id)
+    commitMetaTransaction: async function (ae, crudType, allocation_id, path, auth_ticket, metadata) {
+        if (!metadata) {
+            if (path.length > 0) {
+                metadata = await this.getFileMetaDataFromPath(allocation_id, path, ae.id)
+            } else if (auth_ticket.length > 0) {
+                const at = utils.parseAuthTicket(auth_ticket)
+                metadata = await this.getFileMetaDataFromPathHash(allocation_id, at.file_path_hash, ae.id)
+            }
+        }
         const { name, type, lookup_hash, actual_file_hash, mimetype, size, encrypted_key } = metadata
         const payload = {
-                CrudType: crudType,
-                MetaData:{
-                    Name: name,
-                    Type: type,
-                    Path: path,
-                    LookupHash: lookup_hash,
-                    Hash: actual_file_hash,
-                    MimeType: mimetype,
-                    Size: size,
-                    EncryptedKey: encrypted_key
+            CrudType: crudType,
+            MetaData: {
+                Name: name,
+                Type: type,
+                Path: path,
+                LookupHash: lookup_hash,
+                Hash: actual_file_hash,
+                MimeType: mimetype,
+                Size: size,
+                EncryptedKey: encrypted_key
             }
         }
         return submitTransaction(ae, '', 0, JSON.stringify(payload));

@@ -127,6 +127,12 @@ module.exports = {
         return sha3.sha3_256(allocationId + ":" + path + ":" + fileName + ":" + partNum);
     },
 
+    parseAuthTicket: function (auth_ticket) {
+        var buff = new Buffer(auth_ticket, 'base64')
+        var data = buff.toString('ascii')
+        return JSON.parse(data)
+    },
+    
     parseWalletInfo: function (ae){
         return {
             "client_id": ae.id,
