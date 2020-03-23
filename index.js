@@ -25,7 +25,7 @@ const utils = require('./utils');
 var models = require('./models');
 "use strict";
 
-var miners, sharders, clusterName, version;
+var miners, proxyServerUrl, sharders, clusterName, version;
 let bls;
 
 const StorageSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7";
@@ -61,7 +61,17 @@ const Endpoints = {
     FILE_META_ENDPOINT: "/v1/file/meta/",
     RENAME_ENDPOINT: "/v1/file/rename/",
     COPY_ENDPOINT: "/v1/file/copy/",
-    UPLOAD_ENDPOINT: "/v1/file/upload/"
+    UPLOAD_ENDPOINT: "/v1/file/upload/",
+    COMMIT_ENDPOINT: "/v1/connection/commit/",
+    COPY_ENDPOINT: "/v1/file/copy/",
+
+    PROXY_SERVER_UPLOAD_ENDPOINT: "/upload",
+    PROXY_SERVER_DOWNLOAD_ENDPOINT: "/download",
+    PROXY_SERVER_SHARE_ENDPOINT: "/share",
+    PROXY_SERVER_RENAME_ENDPOINT: "/rename",
+    PROXY_SERVER_COPY_ENDPOINT: "/copy",
+    PROXY_SERVER_DELETE_ENDPOINT: "/delete",
+    PROXY_SERVER_MOVE_ENDPOINT: "/move"
 }
 
 const TransactionType = {
@@ -102,6 +112,7 @@ module.exports = {
                 "sharders": [
                     "http://localhost:7171/"
                 ],
+                "proxyServerUrl": "http://localhost:9082",
                 "transaction_timeout": 15,
                 "clusterName": "local"
             };
@@ -112,6 +123,7 @@ module.exports = {
         miners = config.miners;
         sharders = config.sharders;
         clusterName = config.clusterName;
+        proxyServerUrl = config.proxyServerUrl
         version = "0.8.0";
     },
 
@@ -369,73 +381,124 @@ module.exports = {
             }
         });
     },
+    
+    getFileMetaDataFromPathHash: async function (allocation_id, path_hash, client_id) {
+        const completeAllocationInfo = await this.allocationInfo(allocation_id);
+        const blobber = completeAllocationInfo.blobbers[0].url;
+        return new Promise(async function (resolve, reject) {
+            const blobber_url = blobber + Endpoints.FILE_META_ENDPOINT + allocation_id;
+            const response = await utils.postReqToBlobber(blobber_url, {}, { path_hash: path_hash }, client_id);
+            if (response.status === 200) {
+                resolve(response.data)
+            } else {
+                reject('Not able to fetch file details from blobbers')
+            }
+        });
+    },
 
-    commitMetaTransaction: async function (ae, crudType, allocation_id, path) {
-        const metadata = await this.getFileMetaDataFromPath(allocation_id, path, ae.id)
+    commitMetaTransaction: async function (ae, crudType, allocation_id, path, auth_ticket, metadata) {
+        if (!metadata) {
+            if (path.length > 0) {
+                metadata = await this.getFileMetaDataFromPath(allocation_id, path, ae.id)
+            } else if (auth_ticket.length > 0) {
+                const at = utils.parseAuthTicket(auth_ticket)
+                metadata = await this.getFileMetaDataFromPathHash(allocation_id, at.file_path_hash, ae.id)
+            }
+        }
         const { name, type, lookup_hash, actual_file_hash, mimetype, size, encrypted_key } = metadata
         const payload = {
-                CrudType: crudType,
-                MetaData:{
-                    Name: name,
-                    Type: type,
-                    Path: path,
-                    LookupHash: lookup_hash,
-                    Hash: actual_file_hash,
-                    MimeType: mimetype,
-                    Size: size,
-                    EncryptedKey: encrypted_key
+            CrudType: crudType,
+            MetaData: {
+                Name: name,
+                Type: type,
+                Path: path,
+                LookupHash: lookup_hash,
+                Hash: actual_file_hash,
+                MimeType: mimetype,
+                Size: size,
+                EncryptedKey: encrypted_key
             }
         }
         return submitTransaction(ae, '', 0, JSON.stringify(payload));
     },
-
-    renameObject: async function (allocation_id, path, new_name, client_id) {
-        const completeAllocationInfo = await this.allocationInfo(allocation_id);
-        const associatedBlobbers = completeAllocationInfo.blobbers.map(
-            (detail) => { 
-                return detail.url
-            })
-        return new Promise(async function (resolve, reject) {
-            const connection_id = Math.floor(Math.random() * 10000000000).toString();
-            for (let blobber of associatedBlobbers){
-                const blobber_url = blobber + Endpoints.RENAME_ENDPOINT + allocation_id;
-                const response = await utils.postReqToBlobber(blobber_url,
-                    {
-                       path: path,
-                       new_name: new_name,
-                       connection_id: connection_id
-                    }, {}, client_id);
-                if (response.status===200){
-                    resolve(response.data)
-                }else{
-                    reject('Unable to rename object')
-                }
-            }
-        });
+    
+    uploadObject: async function(payload){
+        const url = proxyServerUrl + Endpoints.PROXY_SERVER_UPLOAD_ENDPOINT
+        const parsed_client_json = utils.parseWalletInfo(JSON.parse(payload.get('client_json')))
+        payload.set('client_json', JSON.stringify(parsed_client_json))
+        const response = await utils.postReq(url, payload);
+        return response
     },
 
-    deleteObject: async function (allocation_id, path, client_id) {
-        const completeAllocationInfo = await this.allocationInfo(allocation_id);
-        const associatedBlobbers = completeAllocationInfo.blobbers.map(
-            (detail) => { 
-                return detail.url
-            })
-        return new Promise(async function (resolve, reject) {
-            const connection_id = Math.floor(Math.random() * 10000000000).toString();
-            for (let blobber of associatedBlobbers){
-                const blobber_url = blobber + Endpoints.UPLOAD_ENDPOINT + allocation_id;
-                const response = await utils.deleteReqToBlobber(blobber_url,
-                    {
-                       path: path,
-                       connection_id: connection_id
-                    }, {}, client_id);
-                if (response.status===200){
-                    resolve(response.data)
-                }else{
-                    reject('Unable to delete object')
-                }
-            }
-        });
+    downloadObject: async function(allocation_id, path, client_json){
+        const url = proxyServerUrl + Endpoints.PROXY_SERVER_DOWNLOAD_ENDPOINT
+        const parsed_client_json = utils.parseWalletInfo(client_json)
+        const params = {
+            allocation: allocation_id,
+            remote_path: path,
+            client_json: parsed_client_json
+        }
+        const response = await utils.getDownloadReq(url, params);
+        return response.request.responseURL
+    },
+
+    renameObject: async function (allocation_id, path, new_name, client_json) {
+        const url = proxyServerUrl + Endpoints.PROXY_SERVER_RENAME_ENDPOINT
+        const parsed_client_json = utils.parseWalletInfo(client_json)
+        const formData = new FormData();
+        formData.append('allocation', allocation_id);
+        formData.append('remote_path', path);
+        formData.append('new_name', new_name);
+        formData.append('client_json', JSON.stringify(parsed_client_json));
+        const response = await utils.putReq(url, formData);
+        return response
+    },
+
+    deleteObject: async function (allocation_id, path, client_json) {
+        const url = proxyServerUrl + Endpoints.PROXY_SERVER_DELETE_ENDPOINT
+        const parsed_client_json = utils.parseWalletInfo(client_json)
+        const formData = new FormData();
+        formData.append('allocation', allocation_id);
+        formData.append('remote_path', path);
+        formData.append('client_json', JSON.stringify(parsed_client_json));
+        const response = await utils.delReq(url, formData);
+        return response
+    },
+
+    copyObject: async function (allocation_id, path, dest, client_json) {
+        const url = proxyServerUrl + Endpoints.PROXY_SERVER_COPY_ENDPOINT
+        const parsed_client_json = utils.parseWalletInfo(client_json)
+        const formData = new FormData();
+        formData.append('allocation', allocation_id);
+        formData.append('remote_path', path);
+        formData.append('dest_path', dest);
+        formData.append('client_json', JSON.stringify(parsed_client_json));
+        const response = await utils.putReq(url, formData);
+        return response
+    },
+
+    shareObject: async function (allocation_id, path, client_json) {
+        const url = proxyServerUrl + Endpoints.PROXY_SERVER_SHARE_ENDPOINT
+        const parsed_client_json = utils.parseWalletInfo(client_json)        
+        const params = {
+            allocation: allocation_id,
+            remote_path: path,
+            client_json: parsed_client_json
+        }
+        const response = await utils.getReq(url, params);
+        return response
+    },
+
+    moveObject: async function (allocation_id, path, client_json) {
+        const url = proxyServerUrl + Endpoints.PROXY_SERVER_MOVE_ENDPOINT
+        const parsed_client_json = utils.parseWalletInfo(client_json)   
+        const formData = new FormData();
+        formData.append('allocation', allocation_id);
+        formData.append('remote_path', path);
+        formData.append('dest_path', dest);
+        formData.append('client_json', JSON.stringify(parsed_client_json));
+        const response = await utils.putReq(url, formData);
+        return response
     },
 
     getAllocationDirStructure: function () {

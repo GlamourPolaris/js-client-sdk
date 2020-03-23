@@ -22,6 +22,8 @@ var JSONbig = require('json-bigint');
 const axios = require('axios');
 const PromiseAll = require('promises-all');
 var BlueBirdPromise = require("bluebird");
+var rp = require('request-promise');
+const moment = require('moment')
 
 const consensusPercentage = 20;
 
@@ -125,7 +127,27 @@ module.exports = {
         return sha3.sha3_256(allocationId + ":" + path + ":" + fileName + ":" + partNum);
     },
 
+    parseAuthTicket: function (auth_ticket) {
+        var buff = new Buffer(auth_ticket, 'base64')
+        var data = buff.toString('ascii')
+        return JSON.parse(data)
+    },
 
+    parseWalletInfo: function (ae) {
+        return {
+            "client_id": ae.id,
+            "client_key": ae.public_key,
+            "keys": [
+                {
+                    "public_key": ae.public_key,
+                    "private_key": ae.secretKey
+                }
+            ],
+            "mnemonics": "bar figure position super change stage beach version word raise busy problem misery poet crystal gravity gospel fun become bring ready width object glance",
+            "version": "1.0",
+            "date_created": moment.unix(ae.timeStamp).format('YYYY-MM-DD HH:mm:ss')
+        }
+    },
     /*
        A utility function to make a post request.
        url: Complete URL along with path to where the post request is to be sent
@@ -144,35 +166,39 @@ module.exports = {
         });
     },
 
+    putReq: function putReq(url, data) {
+        const self = this;
+        return axios({
+            method: 'put',
+            url: url,
+            data: data,
+            transformResponse: function (responseData) {
+                return self.parseJson(responseData)
+            }
+        });
+    },
+
+    delReq: function delReq(url, data) {
+        return axios({
+            method: 'delete',
+            url: url,
+            data: data
+        });
+    },
+
     postReqToBlobber: function postReqToBlobber(url, data, params, clientId) {
         return axios({
             method: 'post',
             url: `https://cors-anywhere.herokuapp.com/${url}`,
-            params: params,
-            body: data,
-            headers: {
-                'X-App-Client-ID': clientId
-            }
-        }).then((response)=> {
-            return response
-        }).catch((error)=> {
-            return error
-        })
-    },
-
-    deleteReqToBlobber: function deleteReqToBlobber(url, data, params, clientId) {
-        return axios({
-            method: 'delete',
-            url: `https://cors-anywhere.herokuapp.com/${url}`,
-            params: params,
-            body: data,
             headers: {
                 'X-App-Client-ID': clientId,
-                'Content-Type': 'multipart/form-data'
-            }
-        }).then((response)=> {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            params: params,
+            body: data
+        }).then((response) => {
             return response
-        }).catch((error)=> {
+        }).catch((error) => {
             return error
         })
     },
@@ -190,6 +216,12 @@ module.exports = {
                 return self.parseJson(data)
             }
         });
+    },
+
+    getDownloadReq: function getDownloadReq(url, params) {
+        return axios.get(url, {
+            params: params
+        })
     },
 
     parseJson: function (jsonString) {
@@ -325,5 +357,5 @@ module.exports = {
         });
     }
 
-    
+
 }
