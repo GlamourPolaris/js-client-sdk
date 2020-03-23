@@ -99,7 +99,7 @@ module.exports = {
     init: function init(configObject, bls_wasm) {
         var config;
         if (typeof configObject != "undefined" && configObject.hasOwnProperty('miners') &&
-            configObject.hasOwnProperty('sharders') && configObject.hasOwnProperty('clusterName')) {
+            configObject.hasOwnProperty('sharders') && configObject.hasOwnProperty('clusterName') && configObject.hasOwnProperty('proxyServerUrl')) {
             config = configObject;
         }
         else {
