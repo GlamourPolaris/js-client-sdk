@@ -576,8 +576,9 @@ async function getInformationFromRandomSharder(url, params, parser) {
 
 }
 
-function createWallet() {
-    
+function createWallet(mnemonic) {
+
+    const seed = bip39.mnemonicToSeed(mnemonic).slice(32);
     const blsSecret = new bls.SecretKey();
     blsSecret.setByCSPRNG()
     const key = blsSecret.getPublicKey().serializeToHexStr();
@@ -592,6 +593,7 @@ function createWallet() {
             .then((response) => {
                 const myaccount = response;
                 myaccount.entity.secretKey = sKey;
+                myaccount.entity.mnemonic = mnemonic;
                 var ae = new models.Wallet(myaccount.entity);
                 resolve(ae);
             })
