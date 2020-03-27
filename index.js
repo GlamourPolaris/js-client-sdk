@@ -396,8 +396,8 @@ module.exports = {
         });
     },
 
-    commitMetaTransaction: async function (ae, crudType, allocation_id, path, auth_ticket, metadata) {
-        if (!metadata) {
+    commitMetaTransaction: async function (ae, crudType, allocation_id, path, auth_ticket='', metadata='') {
+        if (metadata.length===0) {
             if (path.length > 0) {
                 metadata = await this.getFileMetaDataFromPath(allocation_id, path, ae.id)
             } else if (auth_ticket.length > 0) {
