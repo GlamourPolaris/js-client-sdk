@@ -318,6 +318,16 @@ module.exports = {
         return this.executeSmartContract(ae, InterestPoolSmartContractAddress, JSON.stringify(payload), val)
     },
 
+    // unlockTokens: async function(ae, poolId){ 
+    //     const payload = {
+    //         name: "unlock",
+    //         input: {
+    //             poolId: poolId
+    //         }
+    //     }
+    //     return this.executeSmartContract(ae, InterestPoolSmartContractAddress, JSON.stringify(payload))
+    // },
+
     getAllBlobbers: function getAllBlobbers() {
         return utils.getConsensusedInformationFromSharders(sharders,Endpoints.SC_BLOBBER_STATS ,{});
     },
@@ -422,21 +432,23 @@ module.exports = {
         return submitTransaction(ae, '', 0, JSON.stringify(payload));
     },
     
-    uploadObject: async function(payload){
+    uploadObject: async function(file, allocation_id, path, client_json){
         const url = proxyServerUrl + Endpoints.PROXY_SERVER_UPLOAD_ENDPOINT
-        const parsed_client_json = utils.parseWalletInfo(JSON.parse(payload.get('client_json')))
-        payload.set('client_json', JSON.stringify(parsed_client_json))
-        const response = await utils.postReq(url, payload);
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('allocation', allocation_id);
+        formData.append('remote_path', path);
+        formData.append('client_json', JSON.stringify(client_json))
+        const response = await utils.postReq(url, formData);
         return response
     },
 
     downloadObject: async function(allocation_id, path, client_json){
         const url = proxyServerUrl + Endpoints.PROXY_SERVER_DOWNLOAD_ENDPOINT
-        const parsed_client_json = utils.parseWalletInfo(client_json)
         const params = {
             allocation: allocation_id,
             remote_path: path,
-            client_json: parsed_client_json
+            client_json: client_json
         }
         const response = await utils.getDownloadReq(url, params);
         return response.request.responseURL
@@ -444,46 +456,42 @@ module.exports = {
 
     renameObject: async function (allocation_id, path, new_name, client_json) {
         const url = proxyServerUrl + Endpoints.PROXY_SERVER_RENAME_ENDPOINT
-        const parsed_client_json = utils.parseWalletInfo(client_json)
         const formData = new FormData();
         formData.append('allocation', allocation_id);
         formData.append('remote_path', path);
         formData.append('new_name', new_name);
-        formData.append('client_json', JSON.stringify(parsed_client_json));
+        formData.append('client_json', JSON.stringify(client_json));
         const response = await utils.putReq(url, formData);
         return response
     },
 
     deleteObject: async function (allocation_id, path, client_json) {
         const url = proxyServerUrl + Endpoints.PROXY_SERVER_DELETE_ENDPOINT
-        const parsed_client_json = utils.parseWalletInfo(client_json)
         const formData = new FormData();
         formData.append('allocation', allocation_id);
         formData.append('remote_path', path);
-        formData.append('client_json', JSON.stringify(parsed_client_json));
+        formData.append('client_json', JSON.stringify(client_json));
         const response = await utils.delReq(url, formData);
         return response
     },
 
     copyObject: async function (allocation_id, path, dest, client_json) {
         const url = proxyServerUrl + Endpoints.PROXY_SERVER_COPY_ENDPOINT
-        const parsed_client_json = utils.parseWalletInfo(client_json)
         const formData = new FormData();
         formData.append('allocation', allocation_id);
         formData.append('remote_path', path);
         formData.append('dest_path', dest);
-        formData.append('client_json', JSON.stringify(parsed_client_json));
+        formData.append('client_json', JSON.stringify(client_json));
         const response = await utils.putReq(url, formData);
         return response
     },
 
     shareObject: async function (allocation_id, path, client_json) {
         const url = proxyServerUrl + Endpoints.PROXY_SERVER_SHARE_ENDPOINT
-        const parsed_client_json = utils.parseWalletInfo(client_json)        
         const params = {
             allocation: allocation_id,
             remote_path: path,
-            client_json: parsed_client_json
+            client_json: client_json
         }
         const response = await utils.getReq(url, params);
         return response
@@ -491,12 +499,11 @@ module.exports = {
 
     moveObject: async function (allocation_id, path, client_json) {
         const url = proxyServerUrl + Endpoints.PROXY_SERVER_MOVE_ENDPOINT
-        const parsed_client_json = utils.parseWalletInfo(client_json)   
         const formData = new FormData();
         formData.append('allocation', allocation_id);
         formData.append('remote_path', path);
         formData.append('dest_path', dest);
-        formData.append('client_json', JSON.stringify(parsed_client_json));
+        formData.append('client_json', JSON.stringify(client_json));
         const response = await utils.putReq(url, formData);
         return response
     },
