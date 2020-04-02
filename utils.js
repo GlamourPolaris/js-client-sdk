@@ -272,7 +272,12 @@ module.exports = {
                         reject({ error: "Not enough consensus" });
                     }
                     else {
-                        reject(parseConsensusMessage(consensusErrorResponse.response.data));
+                        try{
+                            reject(parseConsensusMessage(consensusErrorResponse.response.data));
+                        }
+                        catch(err){
+                            reject(err)
+                        }
                     }
                 });
 
