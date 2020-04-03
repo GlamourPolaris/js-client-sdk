@@ -587,7 +587,7 @@ function createWallet(mnemonic) {
 
     const seed = bip39.mnemonicToSeed(mnemonic).slice(32);
     const blsSecret = new bls.SecretKey();
-    blsSecret.setByCSPRNG()
+    blsSecret.setLittleEndianMod(seed)
     const key = blsSecret.getPublicKey().serializeToHexStr();
     const id = sha3.sha3_256(utils.hexStringToByte(key));
     const sKey = blsSecret.serializeToHexStr();
