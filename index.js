@@ -239,6 +239,15 @@ module.exports = {
         // });
     },
 
+    createKeys: () => {
+        const mnemonic = bip39.generateMnemonic()
+        const keys = createWalletKeys(mnemonic)
+        return {
+            ...keys,
+            mnemonic
+        }
+    },
+
     registerClient: () => {
         const mnemonic = bip39.generateMnemonic()
         return createWallet(mnemonic);
@@ -585,21 +594,16 @@ async function getInformationFromRandomSharder(url, params, parser) {
 
 function createWallet(mnemonic) {
 
-    const seed = bip39.mnemonicToSeed(mnemonic).slice(32);
-    const blsSecret = new bls.SecretKey();
-    blsSecret.setLittleEndianMod(seed)
-    const key = blsSecret.getPublicKey().serializeToHexStr();
-    const id = sha3.sha3_256(utils.hexStringToByte(key));
-    const sKey = blsSecret.serializeToHexStr();
+    const { client_id, public_key, private_key } = createWalletKeys(mnemonic)
     var data = {};
-    data.public_key = key;
-    data.id = id;
+    data.public_key = public_key;
+    data.id = client_id;
 
     return new Promise(function (resolve, reject) {
         utils.doParallelPostReqToAllMiners(miners, Endpoints.REGISTER_CLIENT, data)
             .then((response) => {
                 const myaccount = response;
-                myaccount.entity.secretKey = sKey;
+                myaccount.entity.secretKey = private_key;
                 myaccount.entity.mnemonic = mnemonic;
                 var ae = new models.Wallet(myaccount.entity);
                 resolve(ae);
@@ -610,6 +614,22 @@ function createWallet(mnemonic) {
     });
 }
 
+function createWalletKeys(mnemonic){
+    
+    const seed = bip39.mnemonicToSeed(mnemonic).slice(32);
+    const blsSecret = new bls.SecretKey();
+    blsSecret.setLittleEndianMod(seed)
+    const public_key = blsSecret.getPublicKey().serializeToHexStr();
+    const client_id = sha3.sha3_256(utils.hexStringToByte(public_key));
+    const private_key = blsSecret.serializeToHexStr();
+
+    return {
+        client_id,
+        public_key,
+        private_key
+    }
+
+}
 
 async function submitTransaction(ae, toClientId, val, note, transaction_type) {
 
