@@ -71,7 +71,8 @@ const Endpoints = {
     PROXY_SERVER_RENAME_ENDPOINT: "/rename",
     PROXY_SERVER_COPY_ENDPOINT: "/copy",
     PROXY_SERVER_DELETE_ENDPOINT: "/delete",
-    PROXY_SERVER_MOVE_ENDPOINT: "/move"
+    PROXY_SERVER_MOVE_ENDPOINT: "/move",
+    PROXY_SERVER_ENCRYPT_PUBLIC_KEY_ENDPOINT: "/publicEncryptionKey"
 }
 
 const TransactionType = {
@@ -495,11 +496,22 @@ module.exports = {
         return response
     },
 
-    shareObject: async function (allocation_id, path, client_json) {
+    shareObject: async function (allocation_id, path, client_id, public_encryption_key, client_json) {
         const url = proxyServerUrl + Endpoints.PROXY_SERVER_SHARE_ENDPOINT
         const params = {
             allocation: allocation_id,
             remote_path: path,
+            client_id: client_id,
+            public_encryption_key: public_encryption_key,
+            client_json: client_json
+        }
+        const response = await utils.getReq(url, params);
+        return response
+    },
+
+    encryptPublicKey: async function (client_json) {
+        const url = proxyServerUrl + Endpoints.PROXY_SERVER_ENCRYPT_PUBLIC_KEY_ENDPOINT
+        const params = {
             client_json: client_json
         }
         const response = await utils.getReq(url, params);
