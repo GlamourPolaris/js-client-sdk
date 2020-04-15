@@ -26,12 +26,14 @@ var models = require('./models');
 "use strict";
 
 var miners, proxyServerUrl, sharders, clusterName, version;
+var preferredBobbers, tokenLock;
+var readPrice, writePrice;
 let bls;
 
 const StorageSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7";
 const FaucetSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3";
 const InterestPoolSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9";
-const MinerSmartContractAddress= "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d1";
+const MinerSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d1";
 
 const Endpoints = {
     REGISTER_CLIENT: 'v1/client/put',
@@ -44,15 +46,15 @@ const Endpoints = {
     CHECK_TRANSACTION_STATUS: "v1/transaction/get/confirmation",
     GET_BALANCE: "v1/client/get/balance",
     GET_SCSTATE: "v1/scstate/get",
-    
-    // SC REST
-    SC_REST : "v1/screst/",
-    SC_REST_ALLOCATION: "v1/screst/"+StorageSmartContractAddress+"/allocation",
-    SC_REST_ALLOCATIONS: "v1/screst/"+StorageSmartContractAddress+"/allocations",
-    SC_BLOBBER_STATS : "v1/screst/"+StorageSmartContractAddress+"/getblobbers",
 
-    GET_LOCKED_TOKENS: "v1/screst/"+InterestPoolSmartContractAddress+"/getPoolsStats",
-    GET_USER_POOLS: "v1/screst/"+MinerSmartContractAddress+"/getUserPools",
+    // SC REST
+    SC_REST: "v1/screst/",
+    SC_REST_ALLOCATION: "v1/screst/" + StorageSmartContractAddress + "/allocation",
+    SC_REST_ALLOCATIONS: "v1/screst/" + StorageSmartContractAddress + "/allocations",
+    SC_BLOBBER_STATS: "v1/screst/" + StorageSmartContractAddress + "/getblobbers",
+
+    GET_LOCKED_TOKENS: "v1/screst/" + InterestPoolSmartContractAddress + "/getPoolsStats",
+    GET_USER_POOLS: "v1/screst/" + MinerSmartContractAddress + "/getUserPools",
 
     //BLOBBER
     ALLOCATION_FILE_LIST: "/v1/file/list/",
@@ -91,7 +93,7 @@ module.exports = {
     },
 
     AllocationTypes: {
-        FREE : "Free",
+        FREE: "Free",
         PREMIUM: "Premium",
         MONETIZE: "Monetize"
     },
@@ -100,7 +102,9 @@ module.exports = {
     init: function init(configObject, bls_wasm) {
         var config;
         if (typeof configObject != "undefined" && configObject.hasOwnProperty('miners') &&
-            configObject.hasOwnProperty('sharders') && configObject.hasOwnProperty('clusterName') && configObject.hasOwnProperty('proxyServerUrl')) {
+            configObject.hasOwnProperty('sharders')
+            && configObject.hasOwnProperty('clusterName')
+            && configObject.hasOwnProperty('proxyServerUrl')) {
             config = configObject;
         }
         else {
@@ -113,6 +117,21 @@ module.exports = {
                 "sharders": [
                     "http://localhost:7171/"
                 ],
+                "preferredBobbers": [
+                    "http://localhost:7051/",
+                    "http://localhost:7052/",
+                    "http://localhost:7053/",
+                    "http://localhost:7054/"
+                ],
+                "readPrice": {
+                    "min": 0,
+                    "max": 0
+                },
+                "writePrice": {
+                    "min": 0,
+                    "max": 0
+                },
+                "tokenLock": 0,
                 "proxyServerUrl": "http://localhost:9082",
                 "transaction_timeout": 15,
                 "clusterName": "local"
@@ -125,6 +144,10 @@ module.exports = {
         sharders = config.sharders;
         clusterName = config.clusterName;
         proxyServerUrl = config.proxyServerUrl
+        preferredBobbers = config.preferredBobbers
+        readPrice = config.readPrice
+        writePrice = config.writePrice
+        tokenLock = config.tokenLock
         version = "0.8.0";
     },
 
@@ -178,60 +201,60 @@ module.exports = {
 
     getBalance: (client_id) => {
         return new Promise(async function (resolve, reject) {
-            utils.getConsensusedInformationFromSharders(sharders,Endpoints.GET_BALANCE,{ client_id: client_id })
-            .then((res) => {
-                resolve(res);
-            })
-            .catch((error) => {
-                if(error.error === "value not present") {
-                    resolve({
-                        balance: 0
-                    })
-                }
-                else {
-                    reject(error);
-                }
-            })
+            utils.getConsensusedInformationFromSharders(sharders, Endpoints.GET_BALANCE, { client_id: client_id })
+                .then((res) => {
+                    resolve(res);
+                })
+                .catch((error) => {
+                    if (error.error === "value not present") {
+                        resolve({
+                            balance: 0
+                        })
+                    }
+                    else {
+                        reject(error);
+                    }
+                })
         });
         // return getInformationFromRandomSharder(Endpoints.GET_BALANCE, { client_id: client_id });
     },
 
     getLockedTokens: (client_id) => {
         return new Promise(async function (resolve, reject) {
-            utils.getConsensusedInformationFromSharders(sharders,Endpoints.GET_LOCKED_TOKENS,{ client_id: client_id })
-            .then((res) => {
-                resolve(res);
-            })
-            .catch((error) => {
-                resolve({
-                    locked_tokens: []
+            utils.getConsensusedInformationFromSharders(sharders, Endpoints.GET_LOCKED_TOKENS, { client_id: client_id })
+                .then((res) => {
+                    resolve(res);
                 })
-            })
+                .catch((error) => {
+                    resolve({
+                        locked_tokens: []
+                    })
+                })
         });
     },
 
     getUserPools: (client_id) => {
         return new Promise(async function (resolve, reject) {
-            utils.getConsensusedInformationFromSharders(sharders,Endpoints.GET_USER_POOLS,{ client_id: client_id })
-            .then((res) => {
-                if (res.pools===null){
+            utils.getConsensusedInformationFromSharders(sharders, Endpoints.GET_USER_POOLS, { client_id: client_id })
+                .then((res) => {
+                    if (res.pools === null) {
+                        resolve({
+                            pools: []
+                        })
+                    }
+                    resolve(res);
+                })
+                .catch((error) => {
                     resolve({
                         pools: []
                     })
-                }
-                resolve(res);
-            })
-            .catch((error) => {
-                resolve({
-                    pools: []
                 })
-            })
         });
     },
 
     checkTransactionStatus: (hash) => {
 
-        return utils.getConsensusedInformationFromSharders(sharders,Endpoints.CHECK_TRANSACTION_STATUS,{ hash: hash },(rawData) => {
+        return utils.getConsensusedInformationFromSharders(sharders, Endpoints.CHECK_TRANSACTION_STATUS, { hash: hash }, (rawData) => {
             return new models.TransactionDetail(rawData)
         });
 
@@ -278,7 +301,7 @@ module.exports = {
     },
 
     getStorageSmartContractStateForKey: (keyName, keyvalue) => {
-        return utils.getConsensusedInformationFromSharders(sharders,Endpoints.GET_SCSTATE,{ key: keyName+":"+keyvalue, sc_address: StorageSmartContractAddress  });
+        return utils.getConsensusedInformationFromSharders(sharders, Endpoints.GET_SCSTATE, { key: keyName + ":" + keyvalue, sc_address: StorageSmartContractAddress });
         // return getInformationFromRandomSharder(Endpoints.GET_SCSTATE, { key: keyName+":"+keyvalue, sc_address: StorageSmartContractAddress  });
     },
 
@@ -292,16 +315,19 @@ module.exports = {
                 owner_public_key: ae.public_key,
                 size: size,
                 expiration_date: expiration_date,
-                num_writes: num_writes
+                read_price_range: readPrice,
+                write_price_range: writePrice,
+                preferred_blobbers: preferredBobbers
             }
         }
-        return this.executeSmartContract(ae, undefined, JSON.stringify(payload));
+        return this.executeSmartContract(ae, undefined, JSON.stringify(payload), tokenLock);
     },
 
-    updateAllocation: function updateAllocation(ae, allocation_id, expiration_date = 2592000, size = 2147483648){
+    updateAllocation: function updateAllocation(ae, allocation_id, expiration_date = 2592000, size = 2147483648) {
         const payload = {
             name: "update_allocation_request",
             input: {
+                owner_id: ae.id,
                 id: allocation_id,
                 size: size,
                 expiration_date: expiration_date
@@ -310,15 +336,15 @@ module.exports = {
         return this.executeSmartContract(ae, undefined, JSON.stringify(payload));
     },
 
-    allocationInfo: function allocationInfo(id){
-        return utils.getConsensusedInformationFromSharders(sharders,Endpoints.SC_REST_ALLOCATION ,{ allocation: id });
+    allocationInfo: function allocationInfo(id) {
+        return utils.getConsensusedInformationFromSharders(sharders, Endpoints.SC_REST_ALLOCATION, { allocation: id });
     },
 
-    listAllocations: function listAllocations(id){
-        return utils.getConsensusedInformationFromSharders(sharders, Endpoints.SC_REST_ALLOCATIONS ,{ client: id })
+    listAllocations: function listAllocations(id) {
+        return utils.getConsensusedInformationFromSharders(sharders, Endpoints.SC_REST_ALLOCATIONS, { client: id })
     },
 
-    createLockTokens: async function(ae, val, durationHr, durationMin){
+    createLockTokens: async function (ae, val, durationHr, durationMin) {
         const payload = {
             name: "lock",
             input: {
@@ -328,7 +354,7 @@ module.exports = {
         return this.executeSmartContract(ae, InterestPoolSmartContractAddress, JSON.stringify(payload), val)
     },
 
-    unlockTokens: async function(ae, poolId){ 
+    unlockTokens: async function (ae, poolId) {
         const payload = {
             name: "unlock",
             input: {
@@ -339,7 +365,7 @@ module.exports = {
     },
 
     getAllBlobbers: function getAllBlobbers() {
-        return utils.getConsensusedInformationFromSharders(sharders,Endpoints.SC_BLOBBER_STATS ,{});
+        return utils.getConsensusedInformationFromSharders(sharders, Endpoints.SC_BLOBBER_STATS, {});
     },
 
     getAllocationFilesFromPath: (allocation_id, blobber_list, path) => {
@@ -348,14 +374,14 @@ module.exports = {
 
             var blobber_url, data;
             var files = [];
-    
+
             for (let blobber of blobber_list) {
                 try {
                     blobber_url = blobber + Endpoints.ALLOCATION_FILE_LIST + allocation_id;
-                    data = await sdk.utils.getReq(blobber_url, {path: path});
-    
+                    data = await sdk.utils.getReq(blobber_url, { path: path });
+
                     if (data.entries != null && data.entries.length > 0) {
-    
+
                         for (let file_data of data.entries) {
                             /* files not contains the element we're looking for so add */
                             if (!files.some(e => e.LookupHash === file_data.LookupHash)) {
@@ -374,34 +400,34 @@ module.exports = {
 
     },
 
-    getFileMetaDataFromPath: async function (allocation_id, path, client_id){
+    getFileMetaDataFromPath: async function (allocation_id, path, client_id) {
         const completeAllocationInfo = await this.allocationInfo(allocation_id);
         const blobber = completeAllocationInfo.blobbers[0].url;
         return new Promise(async function (resolve, reject) {
             const blobber_url = blobber + Endpoints.FILE_META_ENDPOINT + allocation_id;
-            const response = await utils.postReqToBlobber(blobber_url, {}, {path: path}, client_id);
-            if (response.status===200){
+            const response = await utils.postReqToBlobber(blobber_url, {}, { path: path }, client_id);
+            if (response.status === 200) {
                 resolve(response.data)
-            }else{
+            } else {
                 reject('Not able to fetch file details from blobbers')
             }
         });
     },
 
-    getFileStatsFromPath: async function (allocation_id, path, client_id){
+    getFileStatsFromPath: async function (allocation_id, path, client_id) {
         const completeAllocationInfo = await this.allocationInfo(allocation_id);
         const blobber = completeAllocationInfo.blobbers[0].url;
         return new Promise(async function (resolve, reject) {
             const blobber_url = blobber + Endpoints.FILE_STATS_ENDPOINT + allocation_id;
-            const response = await utils.postReqToBlobber(blobber_url, {}, {path: path}, client_id);
-            if (response.status===200){
+            const response = await utils.postReqToBlobber(blobber_url, {}, { path: path }, client_id);
+            if (response.status === 200) {
                 resolve(response.data)
-            }else{
+            } else {
                 reject('Not able to fetch file stats from blobbers')
             }
         });
     },
-    
+
     getFileMetaDataFromPathHash: async function (allocation_id, path_hash, client_id) {
         const completeAllocationInfo = await this.allocationInfo(allocation_id);
         const blobber = completeAllocationInfo.blobbers[0].url;
@@ -416,8 +442,8 @@ module.exports = {
         });
     },
 
-    commitMetaTransaction: async function (ae, crudType, allocation_id, path, auth_ticket='', metadata='') {
-        if (metadata.length===0) {
+    commitMetaTransaction: async function (ae, crudType, allocation_id, path, auth_ticket = '', metadata = '') {
+        if (metadata.length === 0) {
             if (path.length > 0) {
                 metadata = await this.getFileMetaDataFromPath(allocation_id, path, ae.id)
             } else if (auth_ticket.length > 0) {
@@ -441,8 +467,8 @@ module.exports = {
         }
         return submitTransaction(ae, '', 0, JSON.stringify(payload));
     },
-    
-    uploadObject: async function(file, allocation_id, path, client_json){
+
+    uploadObject: async function (file, allocation_id, path, client_json) {
         const url = proxyServerUrl + Endpoints.PROXY_SERVER_UPLOAD_ENDPOINT
         const formData = new FormData();
         formData.append('file', file);
@@ -453,7 +479,7 @@ module.exports = {
         return response
     },
 
-    downloadObject: async function(allocation_id, path, client_json){
+    downloadObject: async function (allocation_id, path, client_json) {
         const url = proxyServerUrl + Endpoints.PROXY_SERVER_DOWNLOAD_ENDPOINT
         const params = {
             allocation: allocation_id,
@@ -535,7 +561,7 @@ module.exports = {
 
     /** Faucets Apis */
 
-    executeFaucetSmartContract : function(ae, methodName, input, transactionValue) {
+    executeFaucetSmartContract: function (ae, methodName, input, transactionValue) {
         const payload = {
             name: methodName,
             input: input
@@ -626,8 +652,8 @@ function createWallet(mnemonic) {
     });
 }
 
-function createWalletKeys(mnemonic){
-    
+function createWalletKeys(mnemonic) {
+
     const seed = bip39.mnemonicToSeed(mnemonic).slice(32);
     const blsSecret = new bls.SecretKey();
     blsSecret.setLittleEndianMod(seed)
@@ -653,8 +679,8 @@ async function submitTransaction(ae, toClientId, val, note, transaction_type) {
     const hash = sha3.sha3_256(hashdata);
     const bytehash = utils.hexStringToByte(hash);
     const sec = new bls.SecretKey();
-	sec.deserializeHexStr(ae.secretKey);
-	const sig = sec.sign(bytehash);
+    sec.deserializeHexStr(ae.secretKey);
+    const sig = sec.sign(bytehash);
 
     var data = {};
     data.client_id = ae.id;
