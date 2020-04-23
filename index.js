@@ -471,7 +471,7 @@ module.exports = {
             client_json: client_json
         }
         const response = await utils.getDownloadReq(url, params);
-        return response.request.responseURL
+        window.location.href = response.request.responseURL
     },
 
     renameObject: async function (allocation_id, path, new_name, client_json) {
