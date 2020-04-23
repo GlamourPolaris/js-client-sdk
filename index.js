@@ -64,6 +64,7 @@ const Endpoints = {
     UPLOAD_ENDPOINT: "/v1/file/upload/",
     COMMIT_ENDPOINT: "/v1/connection/commit/",
     COPY_ENDPOINT: "/v1/file/copy/",
+    OBJECT_TREE_ENDPOINT: '/v1/file/objecttree/',
 
     PROXY_SERVER_UPLOAD_ENDPOINT: "/upload",
     PROXY_SERVER_DOWNLOAD_ENDPOINT: "/download",
@@ -342,36 +343,45 @@ module.exports = {
         return utils.getConsensusedInformationFromSharders(sharders,Endpoints.SC_BLOBBER_STATS ,{});
     },
 
-    getAllocationFilesFromPath: (allocation_id, blobber_list, path) => {
+    getAllocationFilesFromPath: async function (allocation_id, path, client_id) {        
+        var blobber_url;
+        
+        const completeAllocationInfo = await this.allocationInfo(allocation_id);
+        blobber = completeAllocationInfo.blobbers[0].url;
+        blobber_url = blobber + Endpoints.ALLOCATION_FILE_LIST + allocation_id
 
-        return new Promise(async function (resolve, reject) {
+        const list = await utils.getReqBlobbers(blobber_url, {path: path}, client_id);
+        
+        return list
+        // return new Promise(async function (resolve, reject) {
 
-            var blobber_url, data;
-            var files = [];
+            // var blobber_url, data;
+            // var files = [];
+            
+        //     for (let blobber of blobber_list) {
+        //         try {
+        //             blobber = completeAllocationInfo.blobbers[0].url;
+        //             blobber_url = blobber + Endpoints.ALLOCATION_FILE_LIST + allocation_id;
+        //             data = await utils.getReq(blobber_url, {path: path});
     
-            for (let blobber of blobber_list) {
-                try {
-                    blobber_url = blobber + Endpoints.ALLOCATION_FILE_LIST + allocation_id;
-                    data = await sdk.utils.getReq(blobber_url, {path: path});
+        //             if (data.entries != null && data.entries.length > 0) {
     
-                    if (data.entries != null && data.entries.length > 0) {
-    
-                        for (let file_data of data.entries) {
-                            /* files not contains the element we're looking for so add */
-                            if (!files.some(e => e.LookupHash === file_data.LookupHash)) {
-                                files.push(file_data);
-                            }
-                        }
-                    }
-                }
-                catch (error) {
-                    // console.log(error);
-                }
-            }
-            resolve(files);
+        //                 for (let file_data of data.entries) {
+        //                     /* files not contains the element we're looking for so add */
+        //                     if (!files.some(e => e.LookupHash === file_data.LookupHash)) {
+        //                         files.push(file_data);
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //         catch (error) {
+        //             console.log(error);
+        //         }
+        //     }
+        //     console.log('-----files-----', files)
+        //     resolve(files);
 
-        });
-
+        // });
     },
 
     getFileMetaDataFromPath: async function (allocation_id, path, client_id){
