@@ -26,7 +26,7 @@ var models = require('./models');
 "use strict";
 
 var miners, proxyServerUrl, sharders, clusterName, version;
-var preferredBobbers, tokenLock;
+var preferredBlobbers, tokenLock;
 var readPrice, writePrice;
 let bls;
 
@@ -118,7 +118,7 @@ module.exports = {
                 "sharders": [
                     "http://localhost:7171/"
                 ],
-                "preferredBobbers": [
+                "preferredBlobbers": [
                     "http://localhost:7051/",
                     "http://localhost:7052/",
                     "http://localhost:7053/",
@@ -145,7 +145,7 @@ module.exports = {
         sharders = config.sharders;
         clusterName = config.clusterName;
         proxyServerUrl = config.proxyServerUrl
-        preferredBobbers = config.preferredBobbers
+        preferredBlobbers = config.preferredBlobbers
         readPrice = config.readPrice
         writePrice = config.writePrice
         tokenLock = config.tokenLock
@@ -273,11 +273,26 @@ module.exports = {
         }
     },
 
-    registerClient: () => {
-        const mnemonic = bip39.generateMnemonic()
-        return createWallet(mnemonic);
-    },
+  registerClient: async function registerClient(){
+    const mnemonic = bip39.generateMnemonic();
+    const wallet = await createWallet(mnemonic);
+    //creating read pool
+    await this.createReadPool(wallet)
+    return wallet;
+  },
 
+  createReadPool: async function createReadPool(ae){
+    const payload = {
+      name: "new_read_pool",
+      input: null
+    }
+    return this.executeSmartContract(
+      ae,
+      undefined,
+      JSON.stringify(payload)
+    );
+  },
+  
     validateMnemonic: (mnemonic) => {
         return bip39.validateMnemonic(mnemonic)
     },
@@ -306,23 +321,46 @@ module.exports = {
         // return getInformationFromRandomSharder(Endpoints.GET_SCSTATE, { key: keyName+":"+keyvalue, sc_address: StorageSmartContractAddress  });
     },
 
-    allocateStorage: function allocateStorage(ae, data_shards = 2, parity_shards = 2, size = 2147483648, expiration_date = 2592000, num_writes = 0) {
-        const payload = {
-            name: "new_allocation_request",
-            input: {
-                data_shards: data_shards,
-                parity_shards: parity_shards,
-                owner_id: ae.id,
-                owner_public_key: ae.public_key,
-                size: size,
-                expiration_date: expiration_date,
-                read_price_range: readPrice,
-                write_price_range: writePrice,
-                preferred_blobbers: preferredBobbers
-            }
-        }
-        return this.executeSmartContract(ae, undefined, JSON.stringify(payload), tokenLock);
-    },
+  allocateStorage: function allocateStorage(
+    ae,
+    data_shards = 2,
+    parity_shards = 2,
+    size = 2147483648,
+    expiration_date = new Date(),
+    preferred_blobbers = null
+  ) {
+      
+    Date.prototype.addDays = function(days) {
+        var date = new Date(this.valueOf());
+        date.setDate(date.getDate() + days);
+        return date;
+    }
+    
+    expiration_date = Math.floor(expiration_date.addDays(30).getTime()/1000)
+    
+    const payload = {
+      name: "new_allocation_request",
+      input: {
+        data_shards: data_shards,
+        parity_shards: parity_shards,
+        owner_id: ae.id,
+        owner_public_key: ae.public_key,
+        size: size,
+        expiration_date: expiration_date,
+        read_price_range: readPrice,
+        write_price_range: writePrice,
+        max_challenge_completion_time: 3600000000000,
+        preferred_blobbers: preferred_blobbers,
+      },
+    };
+
+    return this.executeSmartContract(
+      ae,
+      undefined,
+      JSON.stringify(payload),
+      tokenLock
+    );
+  },
 
     updateAllocation: function updateAllocation(ae, allocation_id, expiration_date = 2592000, size = 2147483648) {
         const payload = {
@@ -554,13 +592,13 @@ module.exports = {
         return response
     },
 
-    moveObject: async function (allocation_id, path, client_json) {
+    moveObject: async function (allocation_id, path, dest, client_json) {
         const url = proxyServerUrl + Endpoints.PROXY_SERVER_MOVE_ENDPOINT
         const formData = new FormData();
         formData.append('allocation', allocation_id);
         formData.append('remote_path', path);
         formData.append('dest_path', dest);
-        formData.append('client_json', JSON.stringify(client_json));
+        formData.append('client_json', JSON.stringify(client_json)); 
         const response = await utils.putReq(url, formData);
         return response
     },
@@ -700,7 +738,10 @@ async function submitTransaction(ae, toClientId, val, note, transaction_type) {
     data.creation_date = ts;
     data.to_client_id = toClientId;
     data.hash = hash;
-    data.signature = sig.serializeToHexStr();
+	data.transaction_fee = 0;
+	data.signature = sig.serializeToHexStr();
+    data.version='1.0'
+  
     return new Promise(function (resolve, reject) {
         utils.doParallelPostReqToAllMiners(miners, Endpoints.PUT_TRANSACTION, data)
             .then((response) => {
