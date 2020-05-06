@@ -189,7 +189,7 @@ module.exports = {
     postReqToBlobber: function postReqToBlobber(url, data, params, clientId) {
         return axios({
             method: 'post',
-            url: `https://cors-anywhere.herokuapp.com/${url}`,
+            url: url,
             headers: {
                 'X-App-Client-ID': clientId,
                 'Content-Type': 'application/x-www-form-urlencoded'
@@ -205,7 +205,7 @@ module.exports = {
 
     getReqBlobbers: function getReqBlobbers(url, params, clientId) {
         const self = this;
-        return axios.get(`https://cors-anywhere.herokuapp.com/${url}`, {
+        return axios.get(url, {
             params: params,
             headers: {
                 'X-App-Client-ID': clientId
