@@ -67,6 +67,7 @@ const Endpoints = {
     COMMIT_ENDPOINT: "/v1/connection/commit/",
     COPY_ENDPOINT: "/v1/file/copy/",
     OBJECT_TREE_ENDPOINT: '/v1/file/objecttree/',
+    COMMIT_META_TXN_ENDPOINT: "/v1/file/commitmetatxn/",
 
     PROXY_SERVER_UPLOAD_ENDPOINT: "/upload",
     PROXY_SERVER_DOWNLOAD_ENDPOINT: "/download",
@@ -422,26 +423,26 @@ module.exports = {
             // var blobber_url, data;
             // var files = [];
             
-        //     for (let blobber of blobber_list) {
-        //         try {
-        //             blobber = completeAllocationInfo.blobbers[0].url;
-        //             blobber_url = blobber + Endpoints.ALLOCATION_FILE_LIST + allocation_id;
-        //             data = await utils.getReq(blobber_url, {path: path});
+            // for (let blobber of blobber_list) {
+            //     try {
+            //         blobber = completeAllocationInfo.blobbers[0].url;
+            //         blobber_url = blobber + Endpoints.ALLOCATION_FILE_LIST + allocation_id;
+            //         data = await utils.getReq(blobber_url, {path: path});
     
-        //             if (data.entries != null && data.entries.length > 0) {
+            //         if (data.entries != null && data.entries.length > 0) {
     
-        //                 for (let file_data of data.entries) {
-        //                     /* files not contains the element we're looking for so add */
-        //                     if (!files.some(e => e.LookupHash === file_data.LookupHash)) {
-        //                         files.push(file_data);
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //         catch (error) {
-        //             console.log(error);
-        //         }
-        //     }
+            //             for (let file_data of data.entries) {
+            //                 /* files not contains the element we're looking for so add */
+            //                 if (!files.some(e => e.LookupHash === file_data.LookupHash)) {
+            //                     files.push(file_data);
+            //                 }
+            //             }
+            //         }
+            //     }
+            //     catch (error) {
+            //         console.log(error);
+            //     }
+            // }
         //     console.log('-----files-----', files)
         //     resolve(files);
 
@@ -513,7 +514,33 @@ module.exports = {
                 EncryptedKey: encrypted_key
             }
         }
-        return submitTransaction(ae, '', 0, JSON.stringify(payload));
+        const submitResponse = await submitTransaction(ae, '', 0, JSON.stringify(payload));
+        const transactionData = JSON.parse(submitResponse.transaction_data)        
+        await this.updateMetaCommitToBlobbers(submitResponse.hash, allocation_id, transactionData.MetaData.LookupHash, ae.id);
+        return submitResponse
+    },
+
+    updateMetaCommitToBlobbers: async function(transaction_hash, allocation, lookup_hash, client_id){
+        const completeAllocationInfo = await this.allocationInfo(allocation);
+        blobber_list = completeAllocationInfo.blobbers.map(blobber => {
+            return blobber.url
+        });
+
+        return new Promise(async (resolve, reject) => {
+            for (let blobber of blobber_list) {
+                try {
+                    blobber_url = blobber + Endpoints.COMMIT_META_TXN_ENDPOINT + allocation;
+                    const formData = new FormData();
+                    formData.append('path_hash', lookup_hash);
+                    formData.append('txn_id', transaction_hash);
+                    await utils.postReqToBlobber(blobber_url, formData, {}, client_id);
+                }
+                catch (error) {
+                    reject(error)
+                }
+            }
+            resolve()
+        })
     },
 
     uploadObject: async function (file, allocation_id, path, client_json) {

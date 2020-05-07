@@ -195,7 +195,7 @@ module.exports = {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
             params: params,
-            body: data
+            data: data
         }).then((response) => {
             return response
         }).catch((error) => {
