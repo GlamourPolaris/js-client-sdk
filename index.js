@@ -51,6 +51,8 @@ const Endpoints = {
     SC_REST: "v1/screst/",
     SC_REST_ALLOCATION: "v1/screst/" + StorageSmartContractAddress + "/allocation",
     SC_REST_ALLOCATIONS: "v1/screst/" + StorageSmartContractAddress + "/allocations",
+    SC_REST_READPOOL_STATS: "v1/screst/" + StorageSmartContractAddress + "/getReadPoolStat",
+    SC_REST_WRITEPOOL_STATS: "v1/screst/" + StorageSmartContractAddress + "/getWritePoolStat",
     SC_BLOBBER_STATS: "v1/screst/" + StorageSmartContractAddress + "/getblobbers",
 
     GET_LOCKED_TOKENS: "v1/screst/" + InterestPoolSmartContractAddress + "/getPoolsStats",
@@ -384,6 +386,22 @@ module.exports = {
         return utils.getConsensusedInformationFromSharders(sharders, Endpoints.SC_REST_ALLOCATIONS, { client: id })
     },
 
+    readPoolInfo: function readPoolInfo(id) {
+        return utils.getConsensusedInformationFromSharders(
+            sharders, 
+            Endpoints.SC_REST_READPOOL_STATS, 
+            { client_id: id }
+        )
+    },
+
+    writePoolInfo: function writePoolInfo(id) {
+        return utils.getConsensusedInformationFromSharders(
+            sharders,
+            Endpoints.SC_REST_WRITEPOOL_STATS,
+            { client_id: id }
+        )
+    },
+
     createLockTokens: async function (ae, val, durationHr, durationMin) {
         const payload = {
             name: "lock",
@@ -392,6 +410,32 @@ module.exports = {
             }
         }
         return this.executeSmartContract(ae, InterestPoolSmartContractAddress, JSON.stringify(payload), val)
+    },
+
+
+    // duration, allocID, blobberID,
+    // 		zcncore.ConvertToValue(tokens), zcncore.ConvertToValue(fee)
+    
+    lockTokensInReadPool: async function(ae, allocation, duration, tokens){
+        const payload = {
+            name: "read_pool_lock",
+            input: {
+                duration: duration,
+                allocation_id: allocation
+            }
+        }
+        return this.executeSmartContract(ae, undefined, JSON.stringify(payload), tokens)
+    },
+
+    lockTokensInWritePool: async function(ae, allocation, duration, tokens){
+        const payload = {
+            name: "write_pool_lock",
+            input: {
+                duration: duration,
+                allocation_id: allocation
+            }
+        }
+        return this.executeSmartContract(ae, undefined, JSON.stringify(payload), tokens)
     },
 
     unlockTokens: async function (ae, poolId) {
@@ -768,7 +812,6 @@ async function submitTransaction(ae, toClientId, val, note, transaction_type) {
 	data.transaction_fee = 0;
 	data.signature = sig.serializeToHexStr();
     data.version='1.0'
-  
     return new Promise(function (resolve, reject) {
         utils.doParallelPostReqToAllMiners(miners, Endpoints.PUT_TRANSACTION, data)
             .then((response) => {
