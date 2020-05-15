@@ -329,6 +329,7 @@ module.exports = {
     data_shards = 2,
     parity_shards = 2,
     size = 2147483648,
+    lockTokens = tokenLock,
     expiration_date = new Date(),
     preferred_blobbers = null
   ) {
@@ -361,7 +362,7 @@ module.exports = {
       ae,
       undefined,
       JSON.stringify(payload),
-      tokenLock
+      lockTokens
     );
   },
 
