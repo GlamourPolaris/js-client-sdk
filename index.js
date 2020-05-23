@@ -501,8 +501,12 @@ module.exports = {
             const blobber_url = blobber + Endpoints.FILE_META_ENDPOINT + allocation_id;
             const response = await utils.postReqToBlobber(blobber_url, {}, { path: path }, client_id);
             if (response.status === 200) {
-                resolve(response.data)
-            } else {
+                const res = {
+                    ...response.data,
+                    blobbers: completeAllocationInfo.blobbers
+                }
+                resolve(res)
+                } else {
                 reject('Not able to fetch file details from blobbers')
             }
         });
@@ -529,7 +533,11 @@ module.exports = {
             const blobber_url = blobber + Endpoints.FILE_META_ENDPOINT + allocation_id;
             const response = await utils.postReqToBlobber(blobber_url, {}, { path_hash: path_hash }, client_id);
             if (response.status === 200) {
-                resolve(response.data)
+                const res = {
+                    ...response.data,
+                    blobbers: completeAllocationInfo.blobbers
+                }
+                resolve(res)
             } else {
                 reject('Not able to fetch file details from blobbers')
             }
