@@ -596,13 +596,14 @@ module.exports = {
         })
     },
 
-    uploadObject: async function (file, allocation_id, path, client_json) {
+    uploadObject: async function (file, allocation_id, path, encrypt=false, client_json) {
         const url = proxyServerUrl + Endpoints.PROXY_SERVER_UPLOAD_ENDPOINT
         const formData = new FormData();
         formData.append('file', file);
         formData.append('allocation', allocation_id);
         formData.append('remote_path', path);
         formData.append('client_json', JSON.stringify(client_json))
+        formData.append('encrypt', encrypt)
         const response = await utils.postReq(url, formData);
         return response
     },
