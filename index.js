@@ -366,7 +366,7 @@ module.exports = {
     );
   },
 
-    updateAllocation: function updateAllocation(ae, allocation_id, expiration_date = 2592000, size = 2147483648) {
+    updateAllocation: function updateAllocation(ae, allocation_id, expiration_date = 2592000, size = 2147483648, tokens) {
         const payload = {
             name: "update_allocation_request",
             input: {
@@ -376,7 +376,7 @@ module.exports = {
                 expiration_date: expiration_date
             }
         }
-        return this.executeSmartContract(ae, undefined, JSON.stringify(payload));
+        return this.executeSmartContract(ae, undefined, JSON.stringify(payload), tokens);
     },
 
     allocationInfo: function allocationInfo(id) {
