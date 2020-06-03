@@ -268,7 +268,7 @@ module.exports = {
     },
 
     createKeys: () => {
-        const mnemonic = bip39.generateMnemonic()
+        const mnemonic = bip39.generateMnemonic(256)
         const keys = createWalletKeys(mnemonic)
         return {
             ...keys,
@@ -277,7 +277,7 @@ module.exports = {
     },
 
   registerClient: async function registerClient(){
-    const mnemonic = bip39.generateMnemonic();
+    const mnemonic = bip39.generateMnemonic(256);
     const wallet = await createWallet(mnemonic);
     //creating read pool
     await this.createReadPool(wallet)
