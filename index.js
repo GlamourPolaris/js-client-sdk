@@ -656,11 +656,11 @@ module.exports = {
         const params = {
             allocation: allocation_id,
             remote_path: path,
-            client_id: client_id,
-            public_encryption_key: public_encryption_key,
+            referee_client_id: client_id,
+            encryption_public_key: public_encryption_key,
             client_json: client_json
         }
-        const response = await utils.getReq(url, params);
+        const response = await utils.putReq(url, params);
         return response
     },
 
