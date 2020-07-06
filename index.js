@@ -668,7 +668,7 @@ module.exports = {
             encryption_public_key: public_encryption_key,
             client_json: client_json
         }
-        const response = await utils.putReq(url, params);
+        const response = await utils.getReq(url, params);
         return response
     },
 
