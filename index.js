@@ -791,12 +791,14 @@ function createWallet(mnemonic) {
 
 function createWalletKeys(mnemonic) {
 
-    const seed = bip39.mnemonicToSeed(mnemonic).slice(32);
+    const seed = bip39.mnemonicToSeed(mnemonic, "0chain-client-split-key");
+    const buffer = new Uint8Array(seed)
     const blsSecret = new bls.SecretKey();
-    blsSecret.setLittleEndianMod(seed)
+    bls.setRandFunc(buffer)
+    blsSecret.setLittleEndian(buffer)
     const public_key = blsSecret.getPublicKey().serializeToHexStr();
-    const client_id = sha3.sha3_256(utils.hexStringToByte(public_key));
     const private_key = blsSecret.serializeToHexStr();
+    const client_id = sha3.sha3_256(utils.hexStringToByte(public_key));
 
     return {
         client_id,
