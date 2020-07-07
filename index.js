@@ -163,6 +163,27 @@ module.exports = {
         version = "0.8.0";
     },
 
+    createWalletAndDesiredAllocation :async function() {
+        let responseObj= null;
+        return await this.registerClient()
+            .then((activeWallet) =>{
+                responseObj = {activeWallet: activeWallet};
+                return this.executeFaucetSmartContract(activeWallet, "pour", {}, (10 ** 10))
+            })
+            .then((response)=>{
+                responseObj = { ...responseObj, fucetToken: response }
+                return this.allocateStorage(responseObj.activeWallet,6,3,2147483648,5000000000,new Date(),null);
+            })
+            .then((response)=>{
+                responseObj = {...responseObj, allocateStorage: response};
+                return this.lockTokensInReadPool(responseObj.activeWallet, response.hash,3600000000000,5000000000);
+            })
+            .then((response)=> {
+                responseObj = {...responseObj, readPoolLockToken: response}
+                return responseObj;
+            })
+    },
+
     getSdkMetadata: () => {
         return "version: " + version + " cluster: " + clusterName;
     },
@@ -332,15 +353,15 @@ module.exports = {
         // return getInformationFromRandomSharder(Endpoints.GET_SCSTATE, { key: keyName+":"+keyvalue, sc_address: StorageSmartContractAddress  });
     },
 
-  allocateStorage: function allocateStorage(
-    ae,
-    data_shards = 2,
-    parity_shards = 2,
-    size = 2147483648,
-    lockTokens = tokenLock,
-    expiration_date = new Date(),
-    preferred_blobbers = null
-  ) {
+    allocateStorage: function allocateStorage(
+        ae,
+        data_shards = 2,
+        parity_shards = 2,
+        size = 2147483648,
+        lockTokens = tokenLock,
+        expiration_date = new Date(),
+        preferred_blobbers = null
+    ) {
       
     Date.prototype.addDays = function(days) {
         var date = new Date(this.valueOf());
@@ -668,7 +689,7 @@ module.exports = {
             encryption_public_key: public_encryption_key,
             client_json: client_json
         }
-        const response = await utils.putReq(url, params);
+        const response = await utils.getReq(url, params);
         return response
     },
 
