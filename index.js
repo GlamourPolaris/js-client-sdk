@@ -627,6 +627,17 @@ module.exports = {
         window.location.href = response.request.responseURL
     },
 
+    downloadSharedObject: async function (allocation_id, auth_ticket, client_json) {
+        const url = proxyServerUrl + Endpoints.PROXY_SERVER_DOWNLOAD_ENDPOINT
+        const params = {
+            allocation: allocation_id,
+            auth_ticket: auth_ticket,
+            client_json: client_json
+        }
+        const response = await utils.getDownloadReq(url, params);
+        window.location.href = response.request.responseURL
+    },
+
     renameObject: async function (allocation_id, path, new_name, client_json) {
         const url = proxyServerUrl + Endpoints.PROXY_SERVER_RENAME_ENDPOINT
         const formData = new FormData();
