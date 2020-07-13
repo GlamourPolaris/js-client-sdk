@@ -648,6 +648,7 @@ module.exports = {
         }
         const response = await utils.getDownloadReq(url, params);
         window.location.href = response.request.responseURL
+        return response;
     },
 
     downloadSharedObject: async function (allocation_id, auth_ticket, client_json) {
