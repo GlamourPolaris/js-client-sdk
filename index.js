@@ -288,7 +288,6 @@ module.exports = {
     },
 
     checkTransactionStatus: (hash) => {
-
         return utils.getConsensusedInformationFromSharders(sharders, Endpoints.CHECK_TRANSACTION_STATUS, { hash: hash }, (rawData) => {
             return new models.TransactionDetail(rawData)
         });
@@ -484,7 +483,17 @@ module.exports = {
         return utils.getConsensusedInformationFromSharders(sharders, Endpoints.SC_BLOBBER_STATS, {});
     },
 
-    getAllocationFilesFromPath: async function (allocation_id, path, client_id) {        
+    getAllocationSharedFilesFromPath: async function (allocation_id, path, client_id, auth_token = "") {        
+        var blobber_url;
+        const completeAllocationInfo = await this.allocationInfo(allocation_id);
+        blobber = completeAllocationInfo.blobbers[0].url;
+        blobber_url = blobber + Endpoints.ALLOCATION_FILE_LIST + allocation_id
+        const list = await utils.getReqBlobbers(blobber_url, {path: path, auth_token:auth_token }, client_id);
+        
+        return list
+    },
+
+    getAllocationFilesFromPath: async function (allocation_id, path, client_id) {   
         var blobber_url;
         
         const completeAllocationInfo = await this.allocationInfo(allocation_id);
@@ -741,11 +750,6 @@ module.exports = {
         return response
     },
 
-    getAllocationDirStructure: function () {
-
-    },
-
-    /** Faucets Apis */
 
     executeFaucetSmartContract: function (ae, methodName, input, transactionValue) {
         const payload = {
