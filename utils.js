@@ -186,6 +186,33 @@ module.exports = {
         });
     },
 
+    recoverWalletFromCloud: function recoverWalletFromCloud(AppIDToken,AppPhoneNumber) {
+        return axios({
+            method: 'get',
+            url: 'http://one.0box.io:9081/getmnemonic',
+            headers: {
+            'X-App-Id-Token': AppIDToken,
+            'X-App-Phone-Number': AppPhoneNumber,
+            },
+        })
+    },
+
+    SaveWalletToCloud : function saveWalletToCloud(data, clientId, public_key) {
+        const result = axios({
+            method: 'post',
+            url: `http://one.0box.io:9081/savemnemonic`, //0boxEndpoint
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'X-App-Client-ID': clientId,
+              'X-App-Client-Key': public_key,
+              'X-App-Signature': 1234,
+            },
+            data: data,
+          });
+
+          return result;
+    },
+
     postReqToBlobber: function postReqToBlobber(url, data, params, clientId) {
         return axios({
             method: 'post',
@@ -374,6 +401,4 @@ module.exports = {
 
         });
     }
-
-
 }

@@ -726,6 +726,20 @@ module.exports = {
         const response = await utils.putReq(url, formData);
         return response
     },
+    
+    recoverWalletFromCloud: async function (AppIDToken,AppPhoneNumber) {
+        const response = await utils.recoverWalletFromCloud(AppIDToken,AppPhoneNumber);
+        return response
+    },
+
+    saveWalletToCloud: async function (activeWallet, encryptMnemonicUsingPasscode, tokenId, phone) {
+        const data = new FormData();
+        data.append('mnemonic', encryptMnemonicUsingPasscode);
+        data.append('id_token', tokenId);
+        data.append('phone_num', phone);
+        const response = await utils.saveWalletToCloud(data, activeWallet.id, activeWallet.public_key);
+        return response
+    },
 
     getAllocationDirStructure: function () {
 
