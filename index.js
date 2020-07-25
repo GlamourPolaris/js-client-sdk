@@ -480,6 +480,16 @@ module.exports = {
         return this.executeSmartContract(ae, InterestPoolSmartContractAddress, JSON.stringify(payload))
     },
 
+    readPoolTokenUnlock: async function (ae, poolId) {
+        const payload = {
+            name: "unlock_read_token",
+            input: {
+                pool_id: poolId
+            }
+        }
+        return this.executeSmartContract(ae, InterestPoolSmartContractAddress, JSON.stringify(payload))
+    },
+
     getAllBlobbers: function getAllBlobbers() {
         return utils.getConsensusedInformationFromSharders(sharders, Endpoints.SC_BLOBBER_STATS, {});
     },
@@ -494,35 +504,6 @@ module.exports = {
         const list = await utils.getReqBlobbers(blobber_url, {path: path}, client_id);
         
         return list
-        // return new Promise(async function (resolve, reject) {
-
-            // var blobber_url, data;
-            // var files = [];
-            
-            // for (let blobber of blobber_list) {
-            //     try {
-            //         blobber = completeAllocationInfo.blobbers[0].url;
-            //         blobber_url = blobber + Endpoints.ALLOCATION_FILE_LIST + allocation_id;
-            //         data = await utils.getReq(blobber_url, {path: path});
-    
-            //         if (data.entries != null && data.entries.length > 0) {
-    
-            //             for (let file_data of data.entries) {
-            //                 /* files not contains the element we're looking for so add */
-            //                 if (!files.some(e => e.LookupHash === file_data.LookupHash)) {
-            //                     files.push(file_data);
-            //                 }
-            //             }
-            //         }
-            //     }
-            //     catch (error) {
-            //         console.log(error);
-            //     }
-            // }
-        //     console.log('-----files-----', files)
-        //     resolve(files);
-
-        // });
     },
 
     getFileMetaDataFromPath: async function (allocation_id, path, client_id) {
