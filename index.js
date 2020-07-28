@@ -627,7 +627,7 @@ module.exports = {
         })
     },
 
-    uploadObject: async function (file, allocation_id, path, encrypt=false, client_json) {
+    uploadObject: async function (file, allocation_id, path, encrypt=false, client_json, option = null) {
         const url = proxyServerUrl + Endpoints.PROXY_SERVER_UPLOAD_ENDPOINT
         const formData = new FormData();
         formData.append('file', file);
@@ -635,7 +635,7 @@ module.exports = {
         formData.append('remote_path', path);
         formData.append('client_json', JSON.stringify(client_json))
         formData.append('encrypt', encrypt)
-        const response = await utils.postReq(url, formData);
+        const response = await utils.postReq(url, formData, option);
         return response
     },
 
@@ -741,6 +741,7 @@ module.exports = {
         return response
     },
 
+    /** Faucets Apis */
 
     executeFaucetSmartContract: function (ae, methodName, input, transactionValue) {
         const payload = {

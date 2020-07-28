@@ -154,13 +154,19 @@ module.exports = {
        jsonPostString: A stringfy of JSON object the payload for the request
        Return: Returns a Promise.  
    */
-    postReq: function postReq(url, data) {
+    
+    postReq: function postReq(url, data, option) {
         const self = this;
         return axios({
             method: 'post',
             url: url,
             data: data,
-            transformResponse: function (responseData) {
+            onUploadProgress: function(progressEvent) {
+                if(option){
+                    option.onUploadProgress(progressEvent);
+                }
+            },
+            transformResponse: function (responseData,) {
                 return self.parseJson(responseData)
             }
         });
@@ -261,7 +267,9 @@ module.exports = {
     getDownloadReq: function getDownloadReq(url, params) {
         return axios.get(url, {
             params: params
-        })
+        }).catch((err)=>{
+            console.log(err);
+        });
     },
 
     parseJson: function (jsonString) {
