@@ -503,12 +503,12 @@ module.exports = {
         return utils.getConsensusedInformationFromSharders(sharders, Endpoints.SC_BLOBBER_STATS, {});
     },
 
-    getAllocationSharedFilesFromPath: async function (allocation_id, path, client_id, auth_token = "") {        
+    getAllocationSharedFilesFromPath: async function (allocation_id, lookup_hash, client_id, auth_token = "") {        
         var blobber_url;
         const completeAllocationInfo = await this.allocationInfo(allocation_id);
         blobber = completeAllocationInfo.blobbers[0].url;
         blobber_url = blobber + Endpoints.ALLOCATION_FILE_LIST + allocation_id
-        const list = await utils.getReqBlobbers(blobber_url, {path: path, auth_token:auth_token }, client_id);
+        const list = await utils.getReqBlobbers(blobber_url, {path_hash: lookup_hash, auth_token:auth_token }, client_id);
         
         return list
     },
@@ -521,6 +521,17 @@ module.exports = {
         blobber_url = blobber + Endpoints.ALLOCATION_FILE_LIST + allocation_id
 
         const list = await utils.getReqBlobbers(blobber_url, {path: path}, client_id);
+        
+        return list
+    },
+
+    getAllocationFilesFromHash: async function (allocation_id, lookup_hash, client_id) {   
+        var blobber_url;
+        const completeAllocationInfo = await this.allocationInfo(allocation_id);
+        blobber = completeAllocationInfo.blobbers[0].url;
+        blobber_url = blobber + Endpoints.ALLOCATION_FILE_LIST + allocation_id
+
+        const list = await utils.getReqBlobbers(blobber_url, {path_hash: lookup_hash}, client_id);
         
         return list
     },
@@ -733,15 +744,33 @@ module.exports = {
     },
 
     saveWalletToCloud: async function (activeWallet, encryptMnemonicUsingPasscode, tokenId, phone) {
+        const url = '/savemnemonic';
         const data = new FormData();
         data.append('mnemonic', encryptMnemonicUsingPasscode);
         data.append('id_token', tokenId);
         data.append('phone_num', phone);
-        const response = await utils.saveWalletToCloud(data, activeWallet.id, activeWallet.public_key);
+        const response = await utils.postMethodTo0box(url, data, activeWallet.id, activeWallet.public_key);
         return response
     },
 
-    /** Faucets Apis */
+    postShareInfo: async function (phoneNumber, tokenId, authTicket, activeWallet, message, fromInfo) {
+        const url = '/shareinfo';
+        const data = new FormData();
+        data.append('id_token', tokenId);
+        data.append('phone_num', phoneNumber);
+        data.append('auth_ticket', authTicket)
+        data.append('message', message);
+        data.append('from_info', fromInfo);
+        const response = await utils.postMethodTo0box(url, data, activeWallet.id, activeWallet.public_key);
+        return response
+    },
+
+    getShareInfo: async function (phoneNumber, tokenId, client_json) {
+        console.log("jsclient");
+        const response = await utils.getShareInfo(phoneNumber, tokenId, client_json);
+        console.log("response", response);
+        return response
+    },
 
     executeFaucetSmartContract: function (ae, methodName, input, transactionValue) {
         const payload = {

@@ -154,7 +154,7 @@ module.exports = {
        jsonPostString: A stringfy of JSON object the payload for the request
        Return: Returns a Promise.  
    */
-    
+
     postReq: function postReq(url, data, option) {
         const self = this;
         return axios({
@@ -192,31 +192,45 @@ module.exports = {
         });
     },
 
-    recoverWalletFromCloud: function recoverWalletFromCloud(AppIDToken,AppPhoneNumber) {
+    recoverWalletFromCloud: function recoverWalletFromCloud(AppIDToken, AppPhoneNumber) {
         return axios({
             method: 'get',
             url: 'http://one.0box.io:9081/getmnemonic',
             headers: {
-            'X-App-Id-Token': AppIDToken,
-            'X-App-Phone-Number': AppPhoneNumber,
+                'X-App-Id-Token': AppIDToken,
+                'X-App-Phone-Number': AppPhoneNumber,
             },
         })
     },
 
-    SaveWalletToCloud : function saveWalletToCloud(data, clientId, public_key) {
+    getShareInfo: function getShareInfo(phoneNumber, tokenId, client_json) {
+        return axios({
+            method: 'get',
+            url: 'http://one.0box.io:9081/shareinfo',
+            headers: {
+                'X-App-Id-Token': tokenId,
+                'X-App-Phone-Number': phoneNumber,
+                'X-App-Client-ID': client_json.id,
+                'X-App-Client-Key': client_json.public_key,
+                'X-App-Signature': 1234
+            },
+        })
+    },
+
+    postMethodTo0box: function (url, data, clientId, public_key) {
         const result = axios({
             method: 'post',
-            url: `http://one.0box.io:9081/savemnemonic`, //0boxEndpoint
+            url: `http://one.0box.io:9081` + url, //0boxEndpoint
             headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-              'X-App-Client-ID': clientId,
-              'X-App-Client-Key': public_key,
-              'X-App-Signature': 1234,
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-App-Client-ID': clientId,
+                'X-App-Client-Key': public_key,
+                'X-App-Signature': 1234,
             },
             data: data,
-          });
+        });
 
-          return result;
+        return result;
     },
 
     postReqToBlobber: function postReqToBlobber(url, data, params, clientId) {
@@ -320,10 +334,10 @@ module.exports = {
                         reject({ error: "Not enough consensus" });
                     }
                     else {
-                        try{
+                        try {
                             reject(parseConsensusMessage(consensusErrorResponse.response.data));
                         }
-                        catch(err){
+                        catch (err) {
                             reject(err)
                         }
                     }
