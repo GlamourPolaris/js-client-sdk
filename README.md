@@ -11,7 +11,7 @@ All functions except ```init()``` returns promise.
 First  ```import / require ``` the library from github <https://github.com/0chain/js-client-sdk> 
 
 ```
-import jsClientSdk from 'js-client';
+import jsClientSdk from '@zerochain/0chain';
 ```
 ## Initialize
 Before any function in the SDK to be called, the *init* function with the cluster configuration and bls-wasm instance should be called. 

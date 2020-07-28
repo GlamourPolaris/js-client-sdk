@@ -1,8 +1,8 @@
 /* 
-* This file is part of the 0chain js-client distribution (https://github.com/0chain/js-client-sdk).
+* This file is part of the 0chain @zerochain/0chain distribution (https://github.com/0chain/js-client-sdk).
 * Copyright (c) 2018 0chain LLC.
 * 
-* 0chain js-client program is free software: you can redistribute it and/or modify  
+* 0chain @zerochain/0chain program is free software: you can redistribute it and/or modify  
 * it under the terms of the GNU General Public License as published by  
 * the Free Software Foundation, version 3.
 *
