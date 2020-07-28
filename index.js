@@ -479,14 +479,24 @@ module.exports = {
         return this.executeSmartContract(ae, InterestPoolSmartContractAddress, JSON.stringify(payload))
     },
 
-    readPoolTokenUnlock: async function (ae, poolId) {
+    writePoolTokenUnlock: async function (ae, poolId) {
         const payload = {
-            name: "unlock_read_token",
+            name: "write_pool_unlock",
             input: {
                 pool_id: poolId
             }
         }
-        return this.executeSmartContract(ae, InterestPoolSmartContractAddress, JSON.stringify(payload))
+        return this.executeSmartContract(ae, StorageSmartContractAddress, JSON.stringify(payload))
+    },
+
+    readPoolTokenUnlock: async function (ae, poolId) {
+        const payload = {
+            name: "read_pool_unlock",
+            input: {
+                pool_id: poolId
+            }
+        }
+        return this.executeSmartContract(ae, StorageSmartContractAddress, JSON.stringify(payload))
     },
 
     getAllBlobbers: function getAllBlobbers() {
