@@ -281,9 +281,7 @@ module.exports = {
     getDownloadReq: function getDownloadReq(url, params) {
         return axios.get(url, {
             params: params
-        }).catch((err)=>{
-            console.log(err);
-        });
+        })
     },
 
     parseJson: function (jsonString) {
