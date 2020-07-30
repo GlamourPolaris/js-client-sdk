@@ -749,6 +749,7 @@ module.exports = {
         data.append('mnemonic', encryptMnemonicUsingPasscode);
         data.append('id_token', tokenId);
         data.append('phone_num', phone);
+        data.append('app_id', "0x00");
         const response = await utils.postMethodTo0box(url, data, activeWallet.id, activeWallet.public_key);
         return response
     },
