@@ -749,11 +749,12 @@ module.exports = {
         data.append('mnemonic', encryptMnemonicUsingPasscode);
         data.append('id_token', tokenId);
         data.append('phone_num', phone);
+        data.append('app_id', "0x00");
         const response = await utils.postMethodTo0box(url, data, activeWallet.id, activeWallet.public_key);
         return response
     },
 
-    postShareInfo: async function (phoneNumber, tokenId, authTicket, activeWallet, message, fromInfo) {
+    postShareInfo: async function (phoneNumber, tokenId, authTicket, activeWallet, message, fromInfo, receiver_id) {
         const url = '/shareinfo';
         const data = new FormData();
         data.append('id_token', tokenId);
@@ -761,14 +762,23 @@ module.exports = {
         data.append('auth_ticket', authTicket)
         data.append('message', message);
         data.append('from_info', fromInfo);
-        const response = await utils.postMethodTo0box(url, data, activeWallet.id, activeWallet.public_key);
+        data.append('client_id', receiver_id);
+        const response = await utils.postMethodTo0box(url, data, activeWallet.client_id, activeWallet.client_key);
         return response
     },
 
-    getShareInfo: async function (phoneNumber, tokenId, client_json) {
-        console.log("jsclient");
-        const response = await utils.getShareInfo(phoneNumber, tokenId, client_json);
-        console.log("response", response);
+    deleteSharedObject: async function (phoneNumber, tokenId, authTicket, activeWallet) {
+        const url = '/shareinfo';
+        const data = new FormData();
+        data.append('id_token', tokenId);
+        data.append('phone_num', phoneNumber);
+        data.append('auth_ticket', authTicket)
+        const response = await utils.deleteMethodTo0box(url, data, activeWallet.client_id, activeWallet.client_key);
+        return response
+    },
+
+    getShareInfo: async function (phoneNumber, tokenId, activeWallet) {
+        const response = await utils.getShareInfo(phoneNumber, tokenId, activeWallet.client_id, activeWallet.client_key);
         return response
     },
 

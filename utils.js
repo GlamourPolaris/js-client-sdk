@@ -203,15 +203,15 @@ module.exports = {
         })
     },
 
-    getShareInfo: function getShareInfo(phoneNumber, tokenId, client_json) {
+    getShareInfo: function getShareInfo(phoneNumber, tokenId, clientId, clientkey) {
         return axios({
             method: 'get',
             url: 'http://one.0box.io:9081/shareinfo',
             headers: {
                 'X-App-Id-Token': tokenId,
                 'X-App-Phone-Number': phoneNumber,
-                'X-App-Client-ID': client_json.id,
-                'X-App-Client-Key': client_json.public_key,
+                'X-App-Client-ID': clientId,
+                'X-App-Client-Key': clientkey,
                 'X-App-Signature': 1234
             },
         })
@@ -226,6 +226,24 @@ module.exports = {
                 'X-App-Client-ID': clientId,
                 'X-App-Client-Key': public_key,
                 'X-App-Signature': 1234,
+                'X-App-Timestamp': new Date().getTime()
+            },
+            data: data,
+        });
+
+        return result;
+    },
+
+    deleteMethodTo0box: function (url, data, clientId, public_key) {
+        const result = axios({
+            method: 'delete',
+            url: `http://one.0box.io:9081` + url, //0boxEndpoint
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-App-Client-ID': clientId,
+                'X-App-Client-Key': public_key,
+                'X-App-Signature': 1234,
+                'X-App-Timestamp': new Date().getTime()
             },
             data: data,
         });
