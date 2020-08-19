@@ -568,12 +568,12 @@ module.exports = {
         });
     },
 
-    getFileMetaDataFromPathHash: async function (allocation_id, path_hash, client_id) {
+    getFileMetaDataFromPathHash: async function (allocation_id, path_hash, auth_ticket, client_id) {
         const completeAllocationInfo = await this.allocationInfo(allocation_id);
         const blobber = completeAllocationInfo.blobbers[0].url;
         return new Promise(async function (resolve, reject) {
             const blobber_url = blobber + Endpoints.FILE_META_ENDPOINT + allocation_id;
-            const response = await utils.postReqToBlobber(blobber_url, {}, { path_hash: path_hash }, client_id);
+            const response = await utils.postReqToBlobber(blobber_url, {}, { path_hash: path_hash, auth_token: atob(auth_ticket)}, client_id);
             if (response.status === 200) {
                 const res = {
                     ...response.data,
@@ -586,13 +586,13 @@ module.exports = {
         });
     },
 
-    commitMetaTransaction: async function (ae, crudType, allocation_id, path, auth_ticket = '', metadata = '') {
+    commitMetaTransaction: async function (ae, crudType, allocation_id, path='', auth_ticket = '',lookuphash='', metadata = '') {
         if (metadata.length === 0) {
             if (path.length > 0) {
                 metadata = await this.getFileMetaDataFromPath(allocation_id, path, ae.id)
             } else if (auth_ticket.length > 0) {
                 const at = utils.parseAuthTicket(auth_ticket)
-                metadata = await this.getFileMetaDataFromPathHash(allocation_id, at.file_path_hash, ae.id)
+                metadata = await this.getFileMetaDataFromPathHash(at.allocation_id, lookuphash, auth_ticket, ae.id)
             }
         }
         const { name, type, lookup_hash, actual_file_hash, mimetype, size, encrypted_key } = metadata
@@ -611,11 +611,12 @@ module.exports = {
         }
         const submitResponse = await submitTransaction(ae, '', 0, JSON.stringify(payload));
         const transactionData = JSON.parse(submitResponse.transaction_data)        
-        await this.updateMetaCommitToBlobbers(submitResponse.hash, allocation_id, transactionData.MetaData.LookupHash, ae.id);
+        await this.updateMetaCommitToBlobbers(submitResponse.hash, allocation_id, transactionData.MetaData.LookupHash, ae.id, auth_ticket);
         return submitResponse
     },
 
-    updateMetaCommitToBlobbers: async function(transaction_hash, allocation, lookup_hash, client_id){
+    updateMetaCommitToBlobbers: async function(transaction_hash, allocation, lookup_hash, client_id, auth_ticket=""){
+        console
         const completeAllocationInfo = await this.allocationInfo(allocation);
         blobber_list = completeAllocationInfo.blobbers.map(blobber => {
             return blobber.url
@@ -628,6 +629,9 @@ module.exports = {
                     const formData = new FormData();
                     formData.append('path_hash', lookup_hash);
                     formData.append('txn_id', transaction_hash);
+                    if(auth_ticket){
+                        formData.append("auth_token", atob(auth_ticket));
+                    }
                     await utils.postReqToBlobber(blobber_url, formData, {}, client_id);
                 }
                 catch (error) {
@@ -759,7 +763,7 @@ module.exports = {
         const data = new FormData();
         data.append('id_token', tokenId);
         data.append('phone_num', phoneNumber);
-        data.append('auth_ticket', authTicket)
+        data.append('auth_tickets', JSON.stringify(authTicket));
         data.append('message', message);
         data.append('from_info', fromInfo);
         data.append('client_id', receiver_id);
