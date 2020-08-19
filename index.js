@@ -616,7 +616,6 @@ module.exports = {
     },
 
     updateMetaCommitToBlobbers: async function(transaction_hash, allocation, lookup_hash, client_id, auth_ticket=""){
-        console
         const completeAllocationInfo = await this.allocationInfo(allocation);
         blobber_list = completeAllocationInfo.blobbers.map(blobber => {
             return blobber.url
