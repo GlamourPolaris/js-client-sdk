@@ -163,7 +163,7 @@ module.exports = {
         version = "0.8.0";
     },
 
-    
+
     getSdkMetadata: () => {
         return "version: " + version + " cluster: " + clusterName;
     },
@@ -189,7 +189,7 @@ module.exports = {
             })
     },
 
-    
+
     getChainStats: () => {
         return getInformationFromRandomSharder(Endpoints.GET_CHAIN_STATS, {}, (rawData) => {
             return new models.ChainStats(rawData)
@@ -306,26 +306,26 @@ module.exports = {
         }
     },
 
-  registerClient: async function registerClient(){
-    const mnemonic = bip39.generateMnemonic(256);
-    const wallet = await createWallet(mnemonic);
-    //creating read pool
-    await this.createReadPool(wallet)
-    return wallet;
-  },
+    registerClient: async function registerClient() {
+        const mnemonic = bip39.generateMnemonic(256);
+        const wallet = await createWallet(mnemonic);
+        //creating read pool
+        await this.createReadPool(wallet)
+        return wallet;
+    },
 
-  createReadPool: async function createReadPool(ae){
-    const payload = {
-      name: "new_read_pool",
-      input: null
-    }
-    return this.executeSmartContract(
-      ae,
-      undefined,
-      JSON.stringify(payload)
-    );
-  },
-  
+    createReadPool: async function createReadPool(ae) {
+        const payload = {
+            name: "new_read_pool",
+            input: null
+        }
+        return this.executeSmartContract(
+            ae,
+            undefined,
+            JSON.stringify(payload)
+        );
+    },
+
     validateMnemonic: (mnemonic) => {
         return bip39.validateMnemonic(mnemonic)
     },
@@ -363,38 +363,38 @@ module.exports = {
         expiration_date = new Date(),
         preferred_blobbers = null
     ) {
-      
-    Date.prototype.addDays = function(days) {
-        var date = new Date(this.valueOf());
-        date.setDate(date.getDate() + days);
-        return date;
-    }
-    
-    expiration_date = Math.floor(expiration_date.addDays(30).getTime()/1000)
-    
-    const payload = {
-      name: "new_allocation_request",
-      input: {
-        data_shards: data_shards,
-        parity_shards: parity_shards,
-        owner_id: ae.id,
-        owner_public_key: ae.public_key,
-        size: size,
-        expiration_date: expiration_date,
-        read_price_range: readPrice,
-        write_price_range: writePrice,
-        max_challenge_completion_time: 3600000000000,
-        preferred_blobbers: preferred_blobbers,
-      },
-    };
 
-    return this.executeSmartContract(
-      ae,
-      undefined,
-      JSON.stringify(payload),
-      lockTokens
-    );
-  },
+        Date.prototype.addDays = function (days) {
+            var date = new Date(this.valueOf());
+            date.setDate(date.getDate() + days);
+            return date;
+        }
+
+        expiration_date = Math.floor(expiration_date.addDays(30).getTime() / 1000)
+
+        const payload = {
+            name: "new_allocation_request",
+            input: {
+                data_shards: data_shards,
+                parity_shards: parity_shards,
+                owner_id: ae.id,
+                owner_public_key: ae.public_key,
+                size: size,
+                expiration_date: expiration_date,
+                read_price_range: readPrice,
+                write_price_range: writePrice,
+                max_challenge_completion_time: 3600000000000,
+                preferred_blobbers: preferred_blobbers,
+            },
+        };
+
+        return this.executeSmartContract(
+            ae,
+            undefined,
+            JSON.stringify(payload),
+            lockTokens
+        );
+    },
 
     updateAllocation: function updateAllocation(ae, allocation_id, expiration_date = 2592000, size = 2147483648, tokens) {
         const payload = {
@@ -419,8 +419,8 @@ module.exports = {
 
     readPoolInfo: function readPoolInfo(id) {
         return utils.getConsensusedInformationFromSharders(
-            sharders, 
-            Endpoints.SC_REST_READPOOL_STATS, 
+            sharders,
+            Endpoints.SC_REST_READPOOL_STATS,
             { client_id: id }
         )
     },
@@ -446,8 +446,8 @@ module.exports = {
 
     // duration, allocID, blobberID,
     // 		zcncore.ConvertToValue(tokens), zcncore.ConvertToValue(fee)
-    
-    lockTokensInReadPool: async function(ae, allocation, duration, tokens){
+
+    lockTokensInReadPool: async function (ae, allocation, duration, tokens) {
         const payload = {
             name: "read_pool_lock",
             input: {
@@ -458,7 +458,7 @@ module.exports = {
         return this.executeSmartContract(ae, undefined, JSON.stringify(payload), tokens)
     },
 
-    lockTokensInWritePool: async function(ae, allocation, duration, tokens){
+    lockTokensInWritePool: async function (ae, allocation, duration, tokens) {
         const payload = {
             name: "write_pool_lock",
             input: {
@@ -503,36 +503,36 @@ module.exports = {
         return utils.getConsensusedInformationFromSharders(sharders, Endpoints.SC_BLOBBER_STATS, {});
     },
 
-    getAllocationSharedFilesFromPath: async function (allocation_id, lookup_hash, client_id, auth_token = "") {        
+    getAllocationSharedFilesFromPath: async function (allocation_id, lookup_hash, client_id, auth_token = "") {
         var blobber_url;
         const completeAllocationInfo = await this.allocationInfo(allocation_id);
         blobber = completeAllocationInfo.blobbers[0].url;
         blobber_url = blobber + Endpoints.ALLOCATION_FILE_LIST + allocation_id
-        const list = await utils.getReqBlobbers(blobber_url, {path_hash: lookup_hash, auth_token:auth_token }, client_id);
-        
+        const list = await utils.getReqBlobbers(blobber_url, { path_hash: lookup_hash, auth_token: auth_token }, client_id);
+
         return list
     },
 
-    getAllocationFilesFromPath: async function (allocation_id, path, client_id) {   
+    getAllocationFilesFromPath: async function (allocation_id, path, client_id) {
         var blobber_url;
-        
+
         const completeAllocationInfo = await this.allocationInfo(allocation_id);
         blobber = completeAllocationInfo.blobbers[0].url;
         blobber_url = blobber + Endpoints.ALLOCATION_FILE_LIST + allocation_id
 
-        const list = await utils.getReqBlobbers(blobber_url, {path: path}, client_id);
-        
+        const list = await utils.getReqBlobbers(blobber_url, { path: path }, client_id);
+
         return list
     },
 
-    getAllocationFilesFromHash: async function (allocation_id, lookup_hash, client_id) {   
+    getAllocationFilesFromHash: async function (allocation_id, lookup_hash, client_id) {
         var blobber_url;
         const completeAllocationInfo = await this.allocationInfo(allocation_id);
         blobber = completeAllocationInfo.blobbers[0].url;
         blobber_url = blobber + Endpoints.ALLOCATION_FILE_LIST + allocation_id
 
-        const list = await utils.getReqBlobbers(blobber_url, {path_hash: lookup_hash}, client_id);
-        
+        const list = await utils.getReqBlobbers(blobber_url, { path_hash: lookup_hash }, client_id);
+
         return list
     },
 
@@ -548,7 +548,7 @@ module.exports = {
                     blobbers: completeAllocationInfo.blobbers
                 }
                 resolve(res)
-                } else {
+            } else {
                 reject('Not able to fetch file details from blobbers')
             }
         });
@@ -573,7 +573,7 @@ module.exports = {
         const blobber = completeAllocationInfo.blobbers[0].url;
         return new Promise(async function (resolve, reject) {
             const blobber_url = blobber + Endpoints.FILE_META_ENDPOINT + allocation_id;
-            const response = await utils.postReqToBlobber(blobber_url, {}, { path_hash: path_hash, auth_token: atob(auth_ticket)}, client_id);
+            const response = await utils.postReqToBlobber(blobber_url, {}, { path_hash: path_hash, auth_token: atob(auth_ticket) }, client_id);
             if (response.status === 200) {
                 const res = {
                     ...response.data,
@@ -586,7 +586,7 @@ module.exports = {
         });
     },
 
-    commitMetaTransaction: async function (ae, crudType, allocation_id, path='', auth_ticket = '',lookuphash='', metadata = '') {
+    commitMetaTransaction: async function (ae, crudType, allocation_id, path = '', auth_ticket = '', lookuphash = '', metadata = '') {
         if (metadata.length === 0) {
             if (path.length > 0) {
                 metadata = await this.getFileMetaDataFromPath(allocation_id, path, ae.id)
@@ -610,12 +610,12 @@ module.exports = {
             }
         }
         const submitResponse = await submitTransaction(ae, '', 0, JSON.stringify(payload));
-        const transactionData = JSON.parse(submitResponse.transaction_data)        
+        const transactionData = JSON.parse(submitResponse.transaction_data)
         await this.updateMetaCommitToBlobbers(submitResponse.hash, allocation_id, transactionData.MetaData.LookupHash, ae.id, auth_ticket);
         return submitResponse
     },
 
-    updateMetaCommitToBlobbers: async function(transaction_hash, allocation, lookup_hash, client_id, auth_ticket=""){
+    updateMetaCommitToBlobbers: async function (transaction_hash, allocation, lookup_hash, client_id, auth_ticket = "") {
         const completeAllocationInfo = await this.allocationInfo(allocation);
         blobber_list = completeAllocationInfo.blobbers.map(blobber => {
             return blobber.url
@@ -628,7 +628,7 @@ module.exports = {
                     const formData = new FormData();
                     formData.append('path_hash', lookup_hash);
                     formData.append('txn_id', transaction_hash);
-                    if(auth_ticket){
+                    if (auth_ticket) {
                         formData.append("auth_token", atob(auth_ticket));
                     }
                     await utils.postReqToBlobber(blobber_url, formData, {}, client_id);
@@ -641,7 +641,7 @@ module.exports = {
         })
     },
 
-    uploadObject: async function (file, allocation_id, path, encrypt=false, client_json, option = null) {
+    uploadObject: async function (file, allocation_id, path, encrypt = false, client_json, option = null) {
         const url = proxyServerUrl + Endpoints.PROXY_SERVER_UPLOAD_ENDPOINT
         const formData = new FormData();
         formData.append('file', file);
@@ -736,13 +736,13 @@ module.exports = {
         formData.append('allocation', allocation_id);
         formData.append('remote_path', path);
         formData.append('dest_path', dest);
-        formData.append('client_json', JSON.stringify(client_json)); 
+        formData.append('client_json', JSON.stringify(client_json));
         const response = await utils.putReq(url, formData);
         return response
     },
-    
-    recoverWalletFromCloud: async function (AppIDToken,AppPhoneNumber) {
-        const response = await utils.recoverWalletFromCloud(AppIDToken,AppPhoneNumber);
+
+    recoverWalletFromCloud: async function (AppIDToken, AppPhoneNumber) {
+        const response = await utils.recoverWalletFromCloud(AppIDToken, AppPhoneNumber);
         return response
     },
 
@@ -757,15 +757,24 @@ module.exports = {
         return response
     },
 
-    postShareInfo: async function (phoneNumber, tokenId, authTicket, activeWallet, message, fromInfo, receiver_id) {
+    postShareInfo: async function (phoneNumber, tokenId, authTicket, activeWallet, message, fromInfo, receiver_id, ae) {
         const url = '/shareinfo';
+
+        // GET SIGN USING CLIENT_ID AND WALLET PRIVATE_KEY (ADDED BY GOURAV (9 SEP))
+        const bytehash = utils.hexStringToByte(receiver_id);
+        const sec = new bls.SecretKey();
+        sec.deserializeHexStr(ae.secretKey);
+        const sig = sec.sign(bytehash);
+
         const data = new FormData();
         data.append('id_token', tokenId);
         data.append('phone_num', phoneNumber);
         data.append('auth_tickets', JSON.stringify(authTicket));
         data.append('message', message);
         data.append('from_info', fromInfo);
-        data.append('client_id', receiver_id);
+        data.append('client_id', receiver_id); 
+        data.append('reciever_client_id', receiver_id); // ADD BY GOURAV (9 SEP)
+        data.append('client_signature', sig); // ADD BY GOURAV (9 SEP)
         const response = await utils.postMethodTo0box(url, data, activeWallet.client_id, activeWallet.client_key);
         return response
     },
@@ -778,6 +787,14 @@ module.exports = {
         data.append('auth_ticket', authTicket)
         const response = await utils.deleteMethodTo0box(url, data, activeWallet.client_id, activeWallet.client_key);
         return response
+    },
+
+    getSign: function (client_id, private_key) {
+        const bytehash = utils.hexStringToByte(client_id);
+        const sec = new bls.SecretKey();
+        sec.deserializeHexStr(private_key);
+        const sig = sec.sign(bytehash);
+        return sig
     },
 
     getShareInfo: async function (phoneNumber, tokenId, activeWallet) {
@@ -916,9 +933,9 @@ async function submitTransaction(ae, toClientId, val, note, transaction_type) {
     data.creation_date = ts;
     data.to_client_id = toClientId;
     data.hash = hash;
-	data.transaction_fee = 0;
-	data.signature = sig.serializeToHexStr();
-    data.version='1.0'
+    data.transaction_fee = 0;
+    data.signature = sig.serializeToHexStr();
+    data.version = '1.0'
     return new Promise(function (resolve, reject) {
         utils.doParallelPostReqToAllMiners(miners, Endpoints.PUT_TRANSACTION, data)
             .then((response) => {
