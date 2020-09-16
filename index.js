@@ -485,7 +485,6 @@ module.exports = {
         const response = {};
         for (let index in miners){
             let isAllSuccess = true;
-            console.log("getting response from miners index ::", index);
             for (let url in urls) {
                 await utils.getReq(miners[index] + urls[url], {})
                     .then((res) => {
