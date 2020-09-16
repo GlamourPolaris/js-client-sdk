@@ -678,14 +678,21 @@ module.exports = {
 
     getFileStatsFromPath: async function (allocation_id, path, client_id) {
         const completeAllocationInfo = await this.allocationInfo(allocation_id);
-        const blobber = completeAllocationInfo.blobbers[0].url;
         return new Promise(async function (resolve, reject) {
-            const blobber_url = blobber + Endpoints.FILE_STATS_ENDPOINT + allocation_id;
-            const response = await utils.postReqToBlobber(blobber_url, {}, { path: path }, client_id);
-            if (response.status === 200) {
-                resolve(response.data)
+            let allBlobbersResponse = []
+            for(let blobber of completeAllocationInfo.blobbers){
+                const blobber_url = blobber.url + Endpoints.FILE_STATS_ENDPOINT + allocation_id;
+                await utils.postReqToBlobber(blobber_url, {}, { path: path }, client_id)
+                    .then((response) => {
+                        allBlobbersResponse.push({...response.data, url: blobber.url})
+                    }).catch((err)=>{
+                        console.log(err)
+                    })
+            }
+            if(allBlobbersResponse.length > 0){
+                resolve(allBlobbersResponse);
             } else {
-                reject('Not able to fetch file stats from blobbers')
+                reject("Not able to fetch file details from blobbers")
             }
         });
     },
