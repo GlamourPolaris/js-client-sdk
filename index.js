@@ -62,14 +62,14 @@ const Endpoints = {
     SC_REST_READPOOL_STATS: "v1/screst/" + StorageSmartContractAddress + "/getReadPoolStat",
     SC_REST_WRITEPOOL_STATS: "v1/screst/" + StorageSmartContractAddress + "/getWritePoolStat",
     SC_BLOBBER_STATS: "v1/screst/" + StorageSmartContractAddress + "/getblobbers",
-    SC_SHARDER_LIST: "v1/screst/"+ MinerSmartContractAddress +"/getSharderList",
-    SC_MINERS_STATS: "v1/screst/" + MinerSmartContractAddress +"/getMinerList",
+    SC_SHARDER_LIST: "v1/screst/" + MinerSmartContractAddress + "/getSharderList",
+    SC_MINERS_STATS: "v1/screst/" + MinerSmartContractAddress + "/getMinerList",
 
     GET_LOCKED_TOKENS: "v1/screst/" + InterestPoolSmartContractAddress + "/getPoolsStats",
     GET_USER_POOLS: "v1/screst/" + MinerSmartContractAddress + "/getUserPools",
 
     //STAKING
-    GET_STORAGESC_POOL_STATS: "v1/screst/" + StorageSmartContractAddress + "/getUserStakePoolStat", 
+    GET_STORAGESC_POOL_STATS: "v1/screst/" + StorageSmartContractAddress + "/getUserStakePoolStat",
     GET_MINERSC_POOL_STATS: "v1/screst/" + MinerSmartContractAddress + "/getUserPools",
 
     //BLOBBER
@@ -447,18 +447,18 @@ module.exports = {
         return this.executeSmartContract(ae, StorageSmartContractAddress, JSON.stringify(payload), val);
     },
 
-    minerscLockToken: async function (ae, val, id) {
+    minerscAndSharderscLockToken: async function (ae, val, id, type) {
         const payload = {
             name: "addToDelegatePool",
-            input: { id: id }
+            input: { id, type }
         }
         return this.executeSmartContract(ae, MinerSmartContractAddress, JSON.stringify(payload), val)
     },
 
-    requstUnstakeMinerSharderToken: async function (ae, pool_id, id) {
+    requstUnstakeMinerSharderToken: async function (ae, pool_id, id, type) {
         const payload = {
             name: "deleteFromDelegatePool",
-            input: { pool_id, id }
+            input: { pool_id, id, type }
         }
         return this.executeSmartContract(ae, MinerSmartContractAddress, JSON.stringify(payload))
     },
@@ -469,6 +469,53 @@ module.exports = {
             input: { pool_id, blobber_id: id }
         }
         return this.executeSmartContract(ae, StorageSmartContractAddress, JSON.stringify(payload))
+    },
+
+    getMinersShardersBlobbers: async function () {
+        const urls = {
+            minersList: Endpoints.SC_MINERS_STATS,
+            shardersList: Endpoints.SC_SHARDER_LIST,
+            blobbersList: Endpoints.SC_BLOBBER_STATS,
+        };
+        const activeList = {
+            minersList: miners,
+            shardersList: sharders
+        }
+        
+        const response = {};
+        for (let index in miners){
+            let isAllSuccess = true;
+            console.log("getting response from miners index ::", index);
+            for (let url in urls) {
+                await utils.getReq(miners[index] + urls[url], {})
+                    .then((res) => {
+                        let activeUrls;
+                        if(url != "blobbersList"){
+                            let active = activeList[url];
+                            activeUrls = res.data && res.data.Nodes && res.data.Nodes.filter((value)=> {
+                                const url = value.simple_miner.host +":"+ value.simple_miner.port;
+                                for(let val of active){
+                                    if(val.indexOf(url) !== -1) 
+                                        return true
+                                }
+                                return false
+                            }) 
+                        }else {
+                            activeUrls = res.data.Nodes.filter(
+                                (value) => new Date().getTime() - new Date(value.last_health_check * 1000).getTime() < 3600000
+                            );
+                        }
+                        response[url] = activeUrls
+                    })
+                    .catch((err) => {
+                        response[url] = [];
+                        isAllSuccess = false;
+                    });
+            }
+            if(isAllSuccess)
+                break;
+        }
+        return response
     },
 
     getStakeLockedToken: (client_id) => {
@@ -599,26 +646,6 @@ module.exports = {
         const list = await utils.getReqBlobbers(blobber_url, { path: path }, client_id);
 
         return list
-    },
-
-    getMinersShardersBlobbers: async function () {
-        const urls = {
-            minersList: Endpoints.SC_MINERS_STATS,
-            shardersList: Endpoints.SC_SHARDER_LIST,
-            blobbersList: Endpoints.SC_BLOBBER_STATS,
-        };
-        const response = {};
-        let res;
-        for (let url in urls) {
-            res = await utils.getReq(miners[0] + urls[url], {})
-                .then((res) => {
-                    response[url] = res.data.Nodes
-                })
-                .catch((err) => {
-                    response[url] = [];
-                });
-        }
-        return response
     },
 
     getAllocationFilesFromHash: async function (allocation_id, lookup_hash, client_id) {
