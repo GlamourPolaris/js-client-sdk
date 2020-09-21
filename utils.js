@@ -203,22 +203,22 @@ module.exports = {
         })
     },
 
-    getShareInfo: function getShareInfo(phoneNumber, tokenId, clientId, clientkey) {
+    getShareInfo: function getShareInfo(client_signature, clientId, clientkey) {
         return axios({
             method: 'get',
             url: 'http://one.0box.io:9081/shareinfo',
             headers: {
-                'X-App-Id-Token': tokenId,
-                'X-App-Phone-Number': phoneNumber,
                 'X-App-Client-ID': clientId,
                 'X-App-Client-Key': clientkey,
-                'X-App-Signature': 1234
+                'X-App-Signature': 1234,
+                'X-App-Client-Signature': client_signature,
+                'X-App-Timestamp' : new Date().getTime()
             },
         })
     },
 
     postMethodTo0box: function (url, data, clientId, public_key) {
-        const result = axios({
+        return axios({
             method: 'post',
             url: `http://one.0box.io:9081` + url, //0boxEndpoint
             headers: {
@@ -226,12 +226,11 @@ module.exports = {
                 'X-App-Client-ID': clientId,
                 'X-App-Client-Key': public_key,
                 'X-App-Signature': 1234,
-                'X-App-Timestamp': new Date().getTime()
+                'X-App-Timestamp': new Date().getTime(),
             },
             data: data,
         });
 
-        return result;
     },
 
     deleteMethodTo0box: function (url, data, clientId, public_key) {
@@ -239,7 +238,6 @@ module.exports = {
             method: 'delete',
             url: `http://one.0box.io:9081` + url, //0boxEndpoint
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
                 'X-App-Client-ID': clientId,
                 'X-App-Client-Key': public_key,
                 'X-App-Signature': 1234,
@@ -285,11 +283,6 @@ module.exports = {
         const self = this;
         return axios.get(url, {
             params: params,
-            // validateStatus: function (status) {
-            //     console.log("Status", status)
-            //     console.log("Status url", url)
-            //     return (status >= 200 && status < 300) || status == 400;
-            // },
             transformResponse: function (data, headers) {
                 return self.parseJson(data)
             }
@@ -318,16 +311,11 @@ module.exports = {
 
             BlueBirdPromise.some(promises, percentage)
                 .then(function (result) {
-
-                    //console.log("Result", result);
-
                     const hashedResponses = result.map(r => {
                         return sha3.sha3_256(JSON.stringify(r.data))
                     });
 
                     const consensusResponse = getConsensusMessageFromResponse(hashedResponses, percentage, result);
-
-                    //console.log("consensusResponse", consensusResponse)
                     if (consensusResponse === null) {
                         reject({ error: "Not enough consensus" });
                     }
@@ -336,7 +324,6 @@ module.exports = {
                     }
                 })
                 .catch(BlueBirdPromise.AggregateError, function (err) {
-                    //console.log("Error in blue bird", err)
                     const errors = err.map(e => {
                         if (e.response !== undefined && e.response.status !== undefined && e.response.status === 400 && e.response.data !== undefined) {
                             return sha3.sha3_256(JSON.stringify(e.response.data))

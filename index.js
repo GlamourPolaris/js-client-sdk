@@ -886,48 +886,40 @@ module.exports = {
         return response
     },
 
-    postShareInfo: async function (phoneNumber, tokenId, authTicket, activeWallet, message, fromInfo, receiver_id, ae) {
+    postShareInfo: async function (authTicket, activeWallet, message, fromInfo, receiver_id, ae) {
         const url = '/shareinfo';
-
-        // GET SIGN USING CLIENT_ID AND WALLET PRIVATE_KEY (ADDED BY GOURAV (9 SEP))
-        const bytehash = utils.hexStringToByte(receiver_id);
-        const sec = new bls.SecretKey();
-        sec.deserializeHexStr(ae.secretKey);
-        const sig = sec.sign(bytehash);
-
+        const client_signature = this.getSign(ae.id, ae.secretKey);
         const data = new FormData();
-        data.append('id_token', tokenId);
-        data.append('phone_num', phoneNumber);
         data.append('auth_tickets', JSON.stringify(authTicket));
         data.append('message', message);
         data.append('from_info', fromInfo);
-        data.append('client_id', receiver_id); 
-        data.append('reciever_client_id', receiver_id); // ADD BY GOURAV (9 SEP)
-        data.append('client_signature', sig); // ADD BY GOURAV (9 SEP)
-        const response = await utils.postMethodTo0box(url, data, activeWallet.client_id, activeWallet.client_key);
+        data.append('reciever_client_id', receiver_id); 
+        data.append('client_signature', client_signature);
+        const response = await utils.postMethodTo0box(url, data, ae.id, ae.client_key);
         return response
     },
 
-    deleteSharedObject: async function (phoneNumber, tokenId, authTicket, activeWallet) {
+    deleteSharedObject: async function (authTicket, activeWallet) {
         const url = '/shareinfo';
+        const sig = this.getSign(activeWallet.id, activeWallet.secretKey);
         const data = new FormData();
-        data.append('id_token', tokenId);
-        data.append('phone_num', phoneNumber);
+        data.append('client_signature', sig);
         data.append('auth_ticket', authTicket)
-        const response = await utils.deleteMethodTo0box(url, data, activeWallet.client_id, activeWallet.client_key);
+        const response = await utils.deleteMethodTo0box(url, data, activeWallet.id, activeWallet.client_key);
         return response
     },
 
-    getSign: function (client_id, private_key) {
+    getSign: function (client_id, secretKey) {
         const bytehash = utils.hexStringToByte(client_id);
         const sec = new bls.SecretKey();
-        sec.deserializeHexStr(private_key);
+        sec.deserializeHexStr(secretKey);
         const sig = sec.sign(bytehash);
-        return sig
+        return sig.serializeToHexStr();
     },
 
-    getShareInfo: async function (phoneNumber, tokenId, activeWallet) {
-        const response = await utils.getShareInfo(phoneNumber, tokenId, activeWallet.client_id, activeWallet.client_key);
+    getShareInfo: async function (activeWallet) {
+        const clientSignature = this.getSign(activeWallet.id, activeWallet.secretKey);
+        const response = await utils.getShareInfo(clientSignature, activeWallet.id, activeWallet.client_key);
         return response
     },
 
