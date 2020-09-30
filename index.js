@@ -161,11 +161,16 @@ module.exports = {
         miners = config.miners;
         sharders = config.sharders;
         clusterName = config.clusterName;
-        proxyServerUrl = config.proxyServerUrl
-        preferredBlobbers = config.preferredBlobbers
-        readPrice = config.readPrice
-        writePrice = config.writePrice
-        tokenLock = config.tokenLock
+        proxyServerUrl = config.proxyServerUrl;
+        preferredBlobbers = config.preferredBlobbers;
+        readPriceRange = config.readPrice;
+        writePriceRange = config.writePrice;
+        tokenLock = config.tokenLock;
+        dataShards = config.dataShards;
+        parityShards = config.parityShards;
+        allocationSize = config.allocationSize;
+        tokenLock = config.tokenLock;
+        maxChallengeCompletionTime =  config.maxChallengeCompletionTime
         version = "0.8.0";
     },
 
@@ -183,7 +188,7 @@ module.exports = {
             })
             .then((response) => {
                 responseObj = { ...responseObj, fucetToken: response }
-                return this.allocateStorage(responseObj.activeWallet, 6, 3, 2147483648, 5000000000, new Date(), null);
+                return this.allocateStorage(responseObj.activeWallet, dataShards, parityShards, allocationSize, tokenLock);
             })
             .then((response) => {
                 responseObj = { ...responseObj, allocateStorage: response };
@@ -362,12 +367,15 @@ module.exports = {
 
     allocateStorage: function allocateStorage(
         ae,
-        data_shards = 2,
-        parity_shards = 2,
-        size = 2147483648,
+        data_shards = dataShards,
+        parity_shards = parityShards,
+        size = allocationSize,
         lockTokens = tokenLock,
+        preferred_blobbers = null,
+        writePrice = writePriceRange, 
+        readPrice = readPriceRange, 
+        max_challenge_completion_time = maxChallengeCompletionTime,
         expiration_date = new Date(),
-        preferred_blobbers = null
     ) {
 
         Date.prototype.addDays = function (days) {
@@ -381,16 +389,16 @@ module.exports = {
         const payload = {
             name: "new_allocation_request",
             input: {
-                data_shards: data_shards,
-                parity_shards: parity_shards,
+                data_shards,
+                parity_shards,
                 owner_id: ae.id,
                 owner_public_key: ae.public_key,
-                size: size,
-                expiration_date: expiration_date,
+                size,
+                expiration_date,
                 read_price_range: readPrice,
                 write_price_range: writePrice,
-                max_challenge_completion_time: 3600000000000,
-                preferred_blobbers: preferred_blobbers,
+                max_challenge_completion_time,
+                preferred_blobbers,
             },
         };
 
