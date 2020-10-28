@@ -25,7 +25,7 @@ const utils = require('./utils');
 var models = require('./models');
 "use strict";
 
-var miners, proxyServerUrl, sharders, clusterName, version;
+var miners, proxyServerUrl, zeroBoxUrl, sharders, clusterName, version;
 var preferredBlobbers, tokenLock;
 var readPrice, writePrice;
 let bls;
@@ -92,7 +92,13 @@ const Endpoints = {
     PROXY_SERVER_COPY_ENDPOINT: "/copy",
     PROXY_SERVER_DELETE_ENDPOINT: "/delete",
     PROXY_SERVER_MOVE_ENDPOINT: "/move",
-    PROXY_SERVER_ENCRYPT_PUBLIC_KEY_ENDPOINT: "/publicEncryptionKey"
+    PROXY_SERVER_ENCRYPT_PUBLIC_KEY_ENDPOINT: "/publicEncryptionKey",
+
+    // ZEROBOX URLs
+    ZEROBOX_SERVER_GET_MNEMONIC_ENDPOINT: '/getmnemonic',
+    ZEROBOX_SERVER_SHARE_INFO_ENDPOINT: '/shareinfo',
+    ZEROBOX_SERVER_SAVE_MNEMONIC_ENDPOINT: '/savemnemonic',
+    ZEROBOX_SERVER_DELETE_MNEMONIC_ENDPOINT: '/shareinfo'
 }
 
 const TransactionType = {
@@ -122,6 +128,7 @@ module.exports = {
         if (typeof configObject != "undefined" && configObject.hasOwnProperty('miners') &&
             configObject.hasOwnProperty('sharders')
             && configObject.hasOwnProperty('clusterName')
+            && configObject.hasOwnProperty('zeroBoxUrl')
             && configObject.hasOwnProperty('proxyServerUrl')) {
             config = configObject;
         }
@@ -151,6 +158,7 @@ module.exports = {
                 },
                 "tokenLock": 0,
                 "proxyServerUrl": "http://localhost:9082",
+                "zeroBoxUrl": "http://one.0box.io:9081",
                 "transaction_timeout": 15,
                 "clusterName": "local"
             };
@@ -162,6 +170,7 @@ module.exports = {
         sharders = config.sharders;
         clusterName = config.clusterName;
         proxyServerUrl = config.proxyServerUrl;
+        zeroBoxUrl = config.zeroBoxUrl;
         preferredBlobbers = config.preferredBlobbers;
         readPriceRange = config.readPrice;
         writePriceRange = config.writePrice;
@@ -879,12 +888,13 @@ module.exports = {
     },
 
     recoverWalletFromCloud: async function (AppIDToken, AppPhoneNumber) {
-        const response = await utils.recoverWalletFromCloud(AppIDToken, AppPhoneNumber);
+        const url = zeroBoxUrl + Endpoints.ZEROBOX_SERVER_GET_MNEMONIC_ENDPOINT;
+        const response = await utils.recoverWalletFromCloud(url, AppIDToken, AppPhoneNumber);
         return response
     },
 
     saveWalletToCloud: async function (activeWallet, encryptMnemonicUsingPasscode, tokenId, phone) {
-        const url = '/savemnemonic';
+        const url = zeroBoxUrl + Endpoints.ZEROBOX_SERVER_SAVE_MNEMONIC_ENDPOINT;
         const data = new FormData();
         data.append('mnemonic', encryptMnemonicUsingPasscode);
         data.append('id_token', tokenId);
@@ -895,7 +905,7 @@ module.exports = {
     },
 
     postShareInfo: async function (authTicket, activeWallet, message, fromInfo, receiver_id, ae) {
-        const url = '/shareinfo';
+        const url = zeroBoxUrl + Endpoints.ZEROBOX_SERVER_SHARE_INFO_ENDPOINT;
         const client_signature = this.getSign(ae.id, ae.secretKey);
         const data = new FormData();
         data.append('auth_tickets', JSON.stringify(authTicket));
@@ -908,7 +918,7 @@ module.exports = {
     },
 
     deleteSharedObject: async function (authTicket, activeWallet) {
-        const url = '/shareinfo';
+        const url = zeroBoxUrl + Endpoints.ZEROBOX_SERVER_SHARE_INFO_ENDPOINT;
         const sig = this.getSign(activeWallet.id, activeWallet.secretKey);
         const data = new FormData();
         data.append('client_signature', sig);
@@ -926,8 +936,9 @@ module.exports = {
     },
 
     getShareInfo: async function (activeWallet) {
+        const url = zeroBoxUrl + Endpoints.ZEROBOX_SERVER_SHARE_INFO_ENDPOINT;
         const clientSignature = this.getSign(activeWallet.id, activeWallet.secretKey);
-        const response = await utils.getShareInfo(clientSignature, activeWallet.id, activeWallet.client_key);
+        const response = await utils.getShareInfo(url, clientSignature, activeWallet.id, activeWallet.client_key);
         return response
     },
 
