@@ -192,10 +192,10 @@ module.exports = {
         });
     },
 
-    recoverWalletFromCloud: function recoverWalletFromCloud(AppIDToken, AppPhoneNumber) {
+    recoverWalletFromCloud: function recoverWalletFromCloud(url, AppIDToken, AppPhoneNumber) {
         return axios({
             method: 'get',
-            url: 'http://one.0box.io:9081/getmnemonic',
+            url: url,
             headers: {
                 'X-App-Id-Token': AppIDToken,
                 'X-App-Phone-Number': AppPhoneNumber,
@@ -203,10 +203,10 @@ module.exports = {
         })
     },
 
-    getShareInfo: function getShareInfo(client_signature, clientId, clientkey) {
+    getShareInfo: function getShareInfo(url, client_signature, clientId, clientkey) {
         return axios({
             method: 'get',
-            url: 'http://one.0box.io:9081/shareinfo',
+            url: url,
             headers: {
                 'X-App-Client-ID': clientId,
                 'X-App-Client-Key': clientkey,
@@ -220,7 +220,7 @@ module.exports = {
     postMethodTo0box: function (url, data, clientId, public_key) {
         return axios({
             method: 'post',
-            url: `http://one.0box.io:9081` + url, //0boxEndpoint
+            url: url,
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'X-App-Client-ID': clientId,
@@ -236,7 +236,7 @@ module.exports = {
     deleteMethodTo0box: function (url, data, clientId, public_key) {
         const result = axios({
             method: 'delete',
-            url: `http://one.0box.io:9081` + url, //0boxEndpoint
+            url: url,
             headers: {
                 'X-App-Client-ID': clientId,
                 'X-App-Client-Key': public_key,
