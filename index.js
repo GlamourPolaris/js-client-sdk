@@ -1022,8 +1022,19 @@ function createWallet(mnemonic) {
         utils.doParallelPostReqToAllMiners(miners, Endpoints.REGISTER_CLIENT, data)
             .then((response) => {
                 const myaccount = response;
-                myaccount.entity.secretKey = private_key;
-                myaccount.entity.mnemonic = mnemonic;
+                if (myaccount.entity === undefined) {
+                    myaccount.entity = {
+                        id: client_id,
+                        public_key: public_key,
+                        version: response.version,
+                        creation_date: response.creation_date,
+                        secretKey: private_key,
+                        mnemonic: mnemonic
+                    };
+                } else {
+                    myaccount.entity.secretKey = private_key;
+                    myaccount.entity.mnemonic = mnemonic;
+                }
                 var ae = new models.Wallet(myaccount.entity);
                 resolve(ae);
             })
