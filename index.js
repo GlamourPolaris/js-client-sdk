@@ -811,11 +811,13 @@ module.exports = {
         return response;
     },
 
-    downloadSharedObject: async function (allocation_id, auth_ticket, client_json) {
+    downloadSharedObject: async function (allocation_id, auth_ticket, lookup_hash, file_name, client_json) {
         const url = proxyServerUrl + Endpoints.PROXY_SERVER_DOWNLOAD_ENDPOINT
         const params = {
             allocation: allocation_id,
             auth_ticket: auth_ticket,
+            lookup_hash: lookup_hash,	
+            file_name: file_name,
             client_json: client_json
         }
         const response = await utils.getDownloadReq(url, params);
