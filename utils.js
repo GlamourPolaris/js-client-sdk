@@ -320,6 +320,14 @@ module.exports = {
                         reject({ error: "Not enough consensus" });
                     }
                     else {
+                        // Added patch for converting http to https
+                        if (window.location.protocol === 'https:' && consensusResponse.data && consensusResponse.data.blobbers && Array.isArray(consensusResponse.data.blobbers)) {
+                            consensusResponse.data.blobbers.forEach((blobber) => {
+                                let currentURL = new URL(blobber.url);
+                                currentURL.protocol = 'https:';
+                                blobber.url = currentURL.protocol + '//' + currentURL.hostname + '/blobber' + currentURL.port.slice(-2);
+                            });
+                        }
                         resolve(parseConsensusMessage(consensusResponse.data, parser));
                     }
                 })
