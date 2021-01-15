@@ -441,7 +441,10 @@ module.exports = {
         return utils.getConsensusedInformationFromSharders(sharders, Endpoints.SC_REST_ALLOCATIONS, { client: id })
     },
 
-    allocationMinLock: function allocationMinLock(ae, data, parity, size, preferredBlobber, writePrice, readPrice, challengeCompletionTime) {
+    allocationMinLock: function allocationMinLock(ae, data, parity, size, preferredBlobber,
+        writePrice = writePriceRange,
+        readPrice = readPriceRange,
+        challengeCompletionTime) {
         let expiration_date = new Date();
 
         Date.prototype.addDays = function (days) {
