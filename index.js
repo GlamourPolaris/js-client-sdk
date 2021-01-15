@@ -64,6 +64,7 @@ const Endpoints = {
     SC_BLOBBER_STATS: "v1/screst/" + StorageSmartContractAddress + "/getblobbers",
     SC_SHARDER_LIST: "v1/screst/" + MinerSmartContractAddress + "/getSharderList",
     SC_MINERS_STATS: "v1/screst/" + MinerSmartContractAddress + "/getMinerList",
+    SC_REST_ALLOCATION_MIN_LOCK: "v1/screst/" + StorageSmartContractAddress + "/allocation_min_lock",
 
     GET_LOCKED_TOKENS: "v1/screst/" + InterestPoolSmartContractAddress + "/getPoolsStats",
     GET_USER_POOLS: "v1/screst/" + MinerSmartContractAddress + "/getUserPools",
@@ -438,6 +439,36 @@ module.exports = {
 
     listAllocations: function listAllocations(id) {
         return utils.getConsensusedInformationFromSharders(sharders, Endpoints.SC_REST_ALLOCATIONS, { client: id })
+    },
+
+    allocationMinLock: function allocationMinLock(ae, data, parity, size, preferredBlobber,
+        writePrice = writePriceRange,
+        readPrice = readPriceRange,
+        challengeCompletionTime) {
+        let expiration_date = new Date();
+
+        Date.prototype.addDays = function (days) {
+            var date = new Date(this.valueOf());
+            date.setDate(date.getDate() + days);
+            return date;
+        }
+
+        expiration_date = Math.floor(expiration_date.addDays(30).getTime() / 1000)
+
+        return utils.getConsensusedInformationFromSharders(sharders, Endpoints.SC_REST_ALLOCATION_MIN_LOCK, {
+            allocation_data: {
+                data_shards: data,
+                parity_shards: parity,
+                owner_id: ae.id,
+                owner_public_key: ae.public_key,
+                size: size,
+                expiration_date,
+                read_price_range: readPrice,
+                write_price_range: writePrice,
+                max_challenge_completion_time: challengeCompletionTime,
+                preferred_blobbers: preferredBlobber ? preferredBlobber : null
+            }
+        })
     },
 
     readPoolInfo: function readPoolInfo(id) {
