@@ -99,7 +99,8 @@ const Endpoints = {
     ZEROBOX_SERVER_GET_MNEMONIC_ENDPOINT: '/getmnemonic',
     ZEROBOX_SERVER_SHARE_INFO_ENDPOINT: '/shareinfo',
     ZEROBOX_SERVER_SAVE_MNEMONIC_ENDPOINT: '/savemnemonic',
-    ZEROBOX_SERVER_DELETE_MNEMONIC_ENDPOINT: '/shareinfo'
+    ZEROBOX_SERVER_DELETE_MNEMONIC_ENDPOINT: '/shareinfo',
+    ZEROBOX_SERVER_REFERRALS_INFO_ENDPOINT: '/getreferrals'
 }
 
 const TransactionType = {
@@ -180,7 +181,7 @@ module.exports = {
         parityShards = config.parityShards;
         allocationSize = config.allocationSize;
         tokenLock = config.tokenLock;
-        maxChallengeCompletionTime =  config.maxChallengeCompletionTime
+        maxChallengeCompletionTime = config.maxChallengeCompletionTime
         version = "0.8.0";
     },
 
@@ -382,8 +383,8 @@ module.exports = {
         size = allocationSize,
         lockTokens = tokenLock,
         preferred_blobbers = null,
-        writePrice = writePriceRange, 
-        readPrice = readPriceRange, 
+        writePrice = writePriceRange,
+        readPrice = readPriceRange,
         max_challenge_completion_time = maxChallengeCompletionTime,
         expiration_date = new Date(),
     ) {
@@ -529,25 +530,25 @@ module.exports = {
             minersList: miners,
             shardersList: sharders
         }
-        
+
         const response = {};
-        for (let index in miners){
+        for (let index in miners) {
             let isAllSuccess = true;
             for (let url in urls) {
                 await utils.getReq(miners[index] + urls[url], {})
                     .then((res) => {
                         let activeUrls;
-                        if(url != "blobbersList"){
+                        if (url != "blobbersList") {
                             let active = activeList[url];
-                            activeUrls = res.data && res.data.Nodes && res.data.Nodes.filter((value)=> {
-                                const url = value.simple_miner.host +":"+ value.simple_miner.port;
-                                for(let val of active){
-                                    if(val.indexOf(url) !== -1) 
+                            activeUrls = res.data && res.data.Nodes && res.data.Nodes.filter((value) => {
+                                const url = value.simple_miner.host + ":" + value.simple_miner.port;
+                                for (let val of active) {
+                                    if (val.indexOf(url) !== -1)
                                         return true
                                 }
                                 return false
-                            }) 
-                        }else {
+                            })
+                        } else {
                             activeUrls = res.data.Nodes.filter(
                                 (value) => new Date().getTime() - new Date(value.last_health_check * 1000).getTime() < 3600000
                             );
@@ -559,7 +560,7 @@ module.exports = {
                         isAllSuccess = false;
                     });
             }
-            if(isAllSuccess)
+            if (isAllSuccess)
                 break;
         }
         return response
@@ -728,16 +729,16 @@ module.exports = {
         const completeAllocationInfo = await this.allocationInfo(allocation_id);
         return new Promise(async function (resolve, reject) {
             let allBlobbersResponse = []
-            for(let blobber of completeAllocationInfo.blobbers){
+            for (let blobber of completeAllocationInfo.blobbers) {
                 const blobber_url = blobber.url + Endpoints.FILE_STATS_ENDPOINT + allocation_id;
                 await utils.postReqToBlobber(blobber_url, {}, { path: path }, client_id)
                     .then((response) => {
-                        allBlobbersResponse.push({...response.data, url: blobber.url})
-                    }).catch((err)=>{
+                        allBlobbersResponse.push({ ...response.data, url: blobber.url })
+                    }).catch((err) => {
                         console.log(err)
                     })
             }
-            if(allBlobbersResponse.length > 0){
+            if (allBlobbersResponse.length > 0) {
                 resolve(allBlobbersResponse);
             } else {
                 reject("Not able to fetch file details from blobbers")
@@ -847,7 +848,7 @@ module.exports = {
         const params = {
             allocation: allocation_id,
             auth_ticket: auth_ticket,
-            lookup_hash: lookup_hash,	
+            lookup_hash: lookup_hash,
             file_name: file_name,
             client_json: client_json
         }
@@ -944,7 +945,7 @@ module.exports = {
         data.append('auth_tickets', JSON.stringify(authTicket));
         data.append('message', message);
         data.append('from_info', fromInfo);
-        data.append('reciever_client_id', receiver_id); 
+        data.append('reciever_client_id', receiver_id);
         data.append('client_signature', client_signature);
         const response = await utils.postMethodTo0box(url, data, ae.id, ae.client_key);
         return response
@@ -972,6 +973,13 @@ module.exports = {
         const url = zeroBoxUrl + Endpoints.ZEROBOX_SERVER_SHARE_INFO_ENDPOINT;
         const clientSignature = this.getSign(activeWallet.id, activeWallet.secretKey);
         const response = await utils.getShareInfo(url, clientSignature, activeWallet.id, activeWallet.client_key);
+        return response
+    },
+
+    getReferralsInfo: async function (activeWallet) {
+        const url = zeroBoxUrl + Endpoints.ZEROBOX_SERVER_REFERRALS_INFO_ENDPOINT;
+        // const clientSignature = this.getSign(activeWallet.id, activeWallet.secretKey);
+        const response = await utils.getReferrals(url);
         return response
     },
 
