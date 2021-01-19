@@ -217,6 +217,16 @@ module.exports = {
         })
     },
 
+    getReferrals: function getReferrals(url) {
+        return axios({
+            method: 'get',
+            url: url,
+            headers: {
+                'X-App-Timestamp' : new Date().getTime()
+            },
+        })
+    },
+
     postMethodTo0box: function (url, data, clientId, public_key) {
         return axios({
             method: 'post',
