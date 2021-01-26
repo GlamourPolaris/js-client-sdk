@@ -179,9 +179,9 @@ module.exports = {
         tokenLock = config.tokenLock;
         dataShards = config.dataShards;
         parityShards = config.parityShards;
-        allocationSize = config.allocationSize;
+        allocationSize = parseInt(config.allocationSize * 1073741824);
         tokenLock = config.tokenLock;
-        maxChallengeCompletionTime = config.maxChallengeCompletionTime
+        maxChallengeCompletionTime = parseInt(config.maxChallengeCompletionTime * 1000000000)
         version = "0.8.0";
     },
 
