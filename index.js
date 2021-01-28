@@ -203,7 +203,7 @@ module.exports = {
             })
             .then((response) => {
                 responseObj = { ...responseObj, allocateStorage: response };
-                return this.lockTokensInReadPool(responseObj.activeWallet, response.hash, 3600000000000, 5000000000);
+                return this.lockTokensInReadPool(responseObj.activeWallet, response.hash, 2592000000000000, 5000000000);
             })
             .then((response) => {
                 responseObj = { ...responseObj, readPoolLockToken: response }
