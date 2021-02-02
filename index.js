@@ -130,7 +130,6 @@ module.exports = {
         if (typeof configObject != "undefined" && configObject.hasOwnProperty('miners') &&
             configObject.hasOwnProperty('sharders')
             && configObject.hasOwnProperty('clusterName')
-            && configObject.hasOwnProperty('zeroBoxUrl')
             && configObject.hasOwnProperty('proxyServerUrl')) {
             config = configObject;
         }
