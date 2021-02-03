@@ -328,11 +328,17 @@ module.exports = {
                     const consensusResponse = getConsensusMessageFromResponse(hashedResponses, percentage, result);
                     if (consensusResponse === null) {
                         reject({ error: "Not enough consensus" });
-                    }
-                    else {
+                    } else {
+                        console.log('consensusResponse', consensusResponse);
                         // Added patch for converting http to https
                         if (window.location.protocol === 'https:' && consensusResponse.data && consensusResponse.data.blobbers && Array.isArray(consensusResponse.data.blobbers)) {
                             consensusResponse.data.blobbers.forEach((blobber) => {
+                                let currentURL = new URL(blobber.url);
+                                currentURL.protocol = 'https:';
+                                blobber.url = currentURL.protocol + '//' + currentURL.hostname + '/blobber' + currentURL.port.slice(-2);
+                            });
+                        } else if (window.location.protocol === 'https:' && consensusResponse && consensusResponse.Nodes) {
+                            consensusResponse.Nodes.forEach((blobber) => {
                                 let currentURL = new URL(blobber.url);
                                 currentURL.protocol = 'https:';
                                 blobber.url = currentURL.protocol + '//' + currentURL.hostname + '/blobber' + currentURL.port.slice(-2);
