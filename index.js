@@ -535,8 +535,8 @@ module.exports = {
         const response = {};
         for (let index in miners) {
             let isAllSuccess = true;
-            Promise.all(urls.map(url=>{
-utils.getReq(miners[index] + urls[url], {})
+            Promise.all(urls.map(url=>
+                await utils.getReq(miners[index] + urls[url], {})
                     .then((res) => {
                         let activeUrls;
                         if (url != "blobbersList") {
@@ -560,10 +560,7 @@ utils.getReq(miners[index] + urls[url], {})
                         response[url] = [];
                         isAllSuccess = false;
                     });
-            }))
-            for (let url in urls) {
-                await 
-            }
+            ))
             if (isAllSuccess)
                 break;
         }
