@@ -534,7 +534,7 @@ module.exports = {
 
         const arrPromise = [];
 
-        const response = {};
+        // const response = {};
         for (let index in miners) {
             for (let url in urls) {
                 const newPr = new Promise((resolve, reject) => {
