@@ -532,45 +532,43 @@ module.exports = {
             shardersList: sharders
         }
 
-        const arrPromise = [];
-
-        // const response = {};
+        const response = {};
         for (let index in miners) {
+            let isAllSuccess = true;
             for (let url in urls) {
-                const newPr = new Promise((resolve, reject) => {
-                    utils.getReq(miners[index] + urls[url], {})
-                        .then((res) => {
-                            let activeUrls;
-                            if (url != "blobbersList") {
-                                let active = activeList[url];
-                                activeUrls = res.data && res.data.Nodes && res.data.Nodes.filter((value) => {
-                                    const url = value.simple_miner.host + ":" + value.simple_miner.port;
-                                    for (let val of active) {
-                                        if (val.indexOf(url) !== -1)
-                                            return true
+                await utils.getReq(miners[index] + urls[url], {})
+                    .then((res) => {
+                        let activeUrls;
+                        if (url != "blobbersList") {
+                            let active = activeList[url];
+                            activeUrls = res.data && res.data.Nodes && res.data.Nodes.filter((value) => {
+                                const url = value.simple_miner.host + ":" + value.simple_miner.port;
+                                let check=false;
+                                for (let val of active) {
+                                    if (val.indexOf(url.slice(0, -6))  !== -1){
+                                        check=true;
+                                        return true
                                     }
-                                    return false
-                                })
-                            } else {
-                                activeUrls = res.data.Nodes.filter(
-                                    (value) => new Date().getTime() - new Date(value.last_health_check * 1000).getTime() < 3600000
-                                );
-                            }
-                            resolve({[url]: activeUrls});
-                        })
-                        .catch((err) => {
-                            reject({[url]: []})
-                        });
-                });
-                arrPromise.push(newPr);
+                                }
+                                if(check) return true;
+                                return false;
+                            })
+                        } else {
+                            activeUrls = res.data.Nodes.filter(
+                                (value) => new Date().getTime() - new Date(value.last_health_check * 1000).getTime() < 3600000
+                            );
+                        }
+                        response[url] = activeUrls
+                    })
+                    .catch((err) => {
+                        response[url] = [];
+                        isAllSuccess = false;
+                    });
             }
+            if (isAllSuccess)
+                break;
         }
-        const res = await Promise.all(arrPromise);
-        let response = {};
-        res.forEach(item => {
-            response = {...response, ...item}
-        })
-        return response;
+        return response
     },
 
     getStakeLockedToken: (client_id) => {
