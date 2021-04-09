@@ -197,7 +197,7 @@ module.exports = {
             method: 'get',
             url: url,
             headers: {
-                'X-App-Id-Token': AppIDToken,
+                'X-App-ID-TOKEN': AppIDToken,
                 'X-App-Phone-Number': AppPhoneNumber,
             },
         })
