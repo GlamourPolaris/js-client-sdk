@@ -100,7 +100,9 @@ const Endpoints = {
     ZEROBOX_SERVER_SHARE_INFO_ENDPOINT: '/shareinfo',
     ZEROBOX_SERVER_SAVE_MNEMONIC_ENDPOINT: '/savemnemonic',
     ZEROBOX_SERVER_DELETE_MNEMONIC_ENDPOINT: '/shareinfo',
-    ZEROBOX_SERVER_REFERRALS_INFO_ENDPOINT: '/getreferrals'
+    ZEROBOX_SERVER_REFERRALS_INFO_ENDPOINT: '/getreferrals',
+    ZEROBOX_SERVER_FREE_ALLOCATION: '/v2/createallocation',
+    ZEROBOX_SERVER_DELETE_EXIST_ALLOCATION: '/v2/deleteallocation',
 }
 
 const TransactionType = {
@@ -941,6 +943,26 @@ module.exports = {
         data.append('app_id', "0x00");
         const response = await utils.postMethodTo0box(url, data, activeWallet.id, activeWallet.public_key);
         return response
+    },
+
+    createFree2GbAllocation: async function (id_token, phone_num,encryption_key,username,client_id,client_key){
+        const url = zeroBoxUrl + Endpoints.ZEROBOX_SERVER_FREE_ALLOCATION;
+        const data = new FormData();
+        data.append('id_token', id_token);
+        data.append('phone_num', phone_num);
+        data.append('encryption_key',encryption_key);
+        data.append('username', username);
+        const response= await utils.postMethodTo0box(url, data,client_id, client_key);
+        return response;
+    },
+
+    deleteExistAllocation: async function (id_token, phone_num,client_id,client_key){
+        const url = zeroBoxUrl + Endpoints.ZEROBOX_SERVER_DELETE_EXIST_ALLOCATION;
+        const data = new FormData();
+        data.append('id_token', id_token);
+        data.append('phone_num', phone_num);
+        const reponse = await utils.deleteMethodTo0box(url,data, client_id,client_key);
+        return reponse;
     },
 
     postShareInfo: async function (authTicket, activeWallet, message, fromInfo, receiver_id, ae) {
