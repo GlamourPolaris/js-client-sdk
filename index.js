@@ -476,11 +476,13 @@ module.exports = {
     },
 
     readPoolInfo: function readPoolInfo(id) {
-        return utils.getConsensusedInformationFromSharders(
+        const readPoolInfoRes =utils.getConsensusedInformationFromSharders(
             sharders,
             Endpoints.SC_REST_READPOOL_STATS,
             { client_id: id }
-        )
+        );
+        // console.log(readPoolInfoRes,"res read pol")
+        return readPoolInfoRes;
     },
 
     writePoolInfo: function writePoolInfo(id) {
@@ -627,7 +629,12 @@ module.exports = {
                 allocation_id: allocation
             }
         }
-        return this.executeSmartContract(ae, undefined, JSON.stringify(payload), tokens)
+        const readPoolLockRes =await this.executeSmartContract(ae, undefined, JSON.stringify(payload), tokens)
+     
+        if(!readPoolLockRes.transaction_output){
+            this.createReadPool(JSON.parse(localStorage.getItem("wallet_info")))
+        }        
+        return readPoolLockRes;
     },
 
     lockTokensInWritePool: async function (ae, allocation, duration, tokens) {
@@ -1118,6 +1125,7 @@ function createWallet(mnemonic) {
                     myaccount.entity.mnemonic = mnemonic;
                 }
                 var ae = new models.Wallet(myaccount.entity);
+                localStorage.setItem("wallet_info",JSON.stringify(ae))
                 resolve(ae);
             })
             .catch((error) => {
