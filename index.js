@@ -717,6 +717,7 @@ module.exports = {
             const blobberUrl = new URL(blobber.url)
             blobber.convertedUrl = 'https://'+blobberUrl.hostname +'/blobber'+ blobberUrl.port.slice(-2)+'/_statsJSON'
             // console.log(blobber,"blobber info from dets")
+            blobber.url = "https://"+blobberUrl.hostname+blobberUrl.port;
             return blobber;
         })
         const  detailedBlobbersCallingEachApi = await Promise.all(detailedBlobbers.map(async (dBl)=>{
