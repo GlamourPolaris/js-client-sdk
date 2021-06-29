@@ -329,7 +329,7 @@ module.exports = {
                     if (consensusResponse === null) {
                         reject({ error: "Not enough consensus" });
                     } else {
-                        console.log('consensusResponse', consensusResponse);
+                        // console.log('consensusResponse', consensusResponse);
                         // Added patch for converting http to https
                         const isHttpsOrLocal = window.location.protocol === "https" || window.location.hostname === "localhost"
 
