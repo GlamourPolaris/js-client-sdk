@@ -72,6 +72,7 @@ const Endpoints = {
     //STAKING
     GET_STORAGESC_POOL_STATS: "v1/screst/" + StorageSmartContractAddress + "/getUserStakePoolStat",
     GET_MINERSC_POOL_STATS: "v1/screst/" + MinerSmartContractAddress + "/getUserPools",
+    GET_STAKE_POOL_STAT : "v1/screst/" + StorageSmartContractAddress+"/getStakePoolStat",
 
     //BLOBBER
     ALLOCATION_FILE_LIST: "/v1/file/list/",
@@ -86,6 +87,7 @@ const Endpoints = {
     OBJECT_TREE_ENDPOINT: '/v1/file/objecttree/',
     COMMIT_META_TXN_ENDPOINT: "/v1/file/commitmetatxn/",
 
+    //PROXY
     PROXY_SERVER_UPLOAD_ENDPOINT: "/upload",
     PROXY_SERVER_DOWNLOAD_ENDPOINT: "/download",
     PROXY_SERVER_SHARE_ENDPOINT: "/share",
@@ -332,8 +334,11 @@ module.exports = {
     registerClient: async function registerClient() {
         const mnemonic = bip39.generateMnemonic(256);
         const wallet = await createWallet(mnemonic);
+        // window.walletInfo = wallet;
+
         //creating read pool
         await this.createReadPool(wallet)
+        // console.log(wallet,"wallet")
         return wallet;
     },
 
@@ -396,7 +401,9 @@ module.exports = {
             return date;
         }
 
-        expiration_date = Math.floor(expiration_date.addDays(30).getTime() / 1000)
+        expiration_date = Math.floor(expiration_date.addDays(20).getTime() / 1000)
+
+        // console.log(expiration_date,"exp")
 
         const payload = {
             name: "new_allocation_request",
@@ -413,6 +420,8 @@ module.exports = {
                 preferred_blobbers,
             },
         };
+        // console.log(payload,"create allocation payload")
+
 
         return this.executeSmartContract(
             ae,
@@ -476,11 +485,13 @@ module.exports = {
     },
 
     readPoolInfo: function readPoolInfo(id) {
-        return utils.getConsensusedInformationFromSharders(
+        const readPoolInfoRes =utils.getConsensusedInformationFromSharders(
             sharders,
             Endpoints.SC_REST_READPOOL_STATS,
             { client_id: id }
-        )
+        );
+        // console.log(readPoolInfoRes,"res read pol")
+        return readPoolInfoRes;
     },
 
     writePoolInfo: function writePoolInfo(id) {
@@ -605,6 +616,21 @@ module.exports = {
         });
     },
 
+    getStakePoolStat:(blobber_id)=>{
+        return new Promise(async function (resolve,reject){
+            let stakePoolStat = await utils.getConsensusedInformationFromSharders(sharders,Endpoints.GET_STAKE_POOL_STAT,{blobber_id})
+                .then(res=>{
+                    // console.log(res,"res of stake of blobbers")
+                    return res
+                })
+                .catch(err=> null)
+            if(stakePoolStat ===null){
+                stakePoolStat = []
+            }
+            resolve({...stakePoolStat})
+        })
+    },
+
     createLockTokens: async function (ae, val, durationHr, durationMin) {
         const payload = {
             name: "lock",
@@ -627,7 +653,12 @@ module.exports = {
                 allocation_id: allocation
             }
         }
-        return this.executeSmartContract(ae, undefined, JSON.stringify(payload), tokens)
+        const readPoolLockRes =await this.executeSmartContract(ae, undefined, JSON.stringify(payload), tokens)
+     
+        if(!readPoolLockRes.transaction_output){
+            this.createReadPool(JSON.parse(localStorage.getItem("wallet_info")))
+        }        
+        return readPoolLockRes;
     },
 
     lockTokensInWritePool: async function (ae, allocation, duration, tokens) {
@@ -684,12 +715,16 @@ module.exports = {
         const currentBlobbers = await this.getAllBlobbers();
         const detailedBlobbers = currentBlobbers.map((blobber)=>{ 
             const blobberUrl = new URL(blobber.url)
-            blobber.convertedUrl = blobberUrl.protocol+'//'+blobberUrl.hostname +'/blobber'+ blobberUrl.port.slice(-2)+'/_statsJSON'
+            blobber.convertedUrl = 'https://'+blobberUrl.hostname +'/blobber'+ blobberUrl.port.slice(-2)+'/_statsJSON'
+            // console.log(blobber,"blobber info from dets")
             return blobber;
         })
         const  detailedBlobbersCallingEachApi = await Promise.all(detailedBlobbers.map(async (dBl)=>{
             const blobData = await fetch(dBl.convertedUrl)
             const blobJson = await blobData.json()
+            const blobStakeStats = await this.getStakePoolStat(dBl.id)
+            // console.log(blobStakeStats,"blob stake stats")
+            blobJson.free_from_blobber_stake_stats = await blobStakeStats.free
             return {...blobJson,...dBl};
        }))  
         return detailedBlobbersCallingEachApi ;
@@ -754,6 +789,7 @@ module.exports = {
                 const blobber_url = blobber.url + Endpoints.FILE_STATS_ENDPOINT + allocation_id;
                 await utils.postReqToBlobber(blobber_url, {}, { path: path }, client_id)
                     .then((response) => {
+                       // console.log(response,"response from blobbers")
                         allBlobbersResponse.push({ ...response.data, url: blobber.url })
                     }).catch((err) => {
                         console.log(err)
@@ -1043,7 +1079,6 @@ module.exports = {
     VerificationTicket: models.VerificationTicket,
     utils: utils,
     TransactionType: TransactionType
-
 }
 
 ///^^^^^^  End of expored functions   ^^^^^^////////
@@ -1118,6 +1153,7 @@ function createWallet(mnemonic) {
                     myaccount.entity.mnemonic = mnemonic;
                 }
                 var ae = new models.Wallet(myaccount.entity);
+                localStorage.setItem("wallet_info",JSON.stringify(ae))
                 resolve(ae);
             })
             .catch((error) => {
@@ -1168,7 +1204,10 @@ async function submitTransaction(ae, toClientId, val, note, transaction_type) {
     data.hash = hash;
     data.transaction_fee = 0;
     data.signature = sig.serializeToHexStr();
-    data.version = '1.0'
+    data.version = '1.0';
+    data.txn_output_hash = "";
+    data.public_key = ae.public_key;
+    
     return new Promise(function (resolve, reject) {
         utils.doParallelPostReqToAllMiners(miners, Endpoints.PUT_TRANSACTION, data)
             .then((response) => {
