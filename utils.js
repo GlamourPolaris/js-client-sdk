@@ -329,16 +329,15 @@ module.exports = {
                     if (consensusResponse === null) {
                         reject({ error: "Not enough consensus" });
                     } else {
-                        // console.log('consensusResponse', consensusResponse);
+                        // console.log('consensusResponse from sdk', consensusResponse);
                         // Added patch for converting http to https
-                        const isHttpsOrLocal = window.location.protocol === "https" || window.location.hostname === "localhost"
-
-                        if (isHttpsOrLocal && consensusResponse.data && consensusResponse.data.blobbers && Array.isArray(consensusResponse.data.blobbers)) {
+                        
+                        if (/* window.location.protocol === "https" && */ consensusResponse.data && consensusResponse.data.blobbers && Array.isArray(consensusResponse.data.blobbers)) {
                             consensusResponse.data.blobbers.forEach((blobber) => {
                                 let currentURL = new URL(blobber.url);
                                 blobber.url = 'https://' + currentURL.hostname + '/blobber' + currentURL.port.slice(-2);
                             });
-                        } else if (isHttpsOrLocal && consensusResponse && consensusResponse.Nodes) {
+                        } else if (/* window.location.protocol === "https" && */ consensusResponse && consensusResponse.Nodes) {
                             consensusResponse.Nodes.forEach((blobber) => {
                                 let currentURL = new URL(blobber.url);
                                 blobber.url = 'https://' + currentURL.hostname + '/blobber' + currentURL.port.slice(-2);
