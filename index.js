@@ -716,15 +716,14 @@ module.exports = {
         const detailedBlobbers = currentBlobbers.map((blobber)=>{ 
             const blobberUrl = new URL(blobber.url)
             blobber.convertedUrl = 'https://'+blobberUrl.hostname +'/blobber'+ blobberUrl.port.slice(-2)+'/_statsJSON'
-            // console.log(blobber,"blobber info from dets")
-            blobber.url = "https://"+blobberUrl.hostname+blobberUrl.port;
+            blobber.convertedURL = 'https://'+blobberUrl.hostname +'/blobber'+ blobberUrl.port.slice(-2)+'/_stats'
+
             return blobber;
         })
         const  detailedBlobbersCallingEachApi = await Promise.all(detailedBlobbers.map(async (dBl)=>{
             const blobData = await fetch(dBl.convertedUrl)
             const blobJson = await blobData.json()
             const blobStakeStats = await this.getStakePoolStat(dBl.id)
-            // console.log(blobStakeStats,"blob stake stats")
             blobJson.free_from_blobber_stake_stats = await blobStakeStats.free
             return {...blobJson,...dBl};
        }))  
