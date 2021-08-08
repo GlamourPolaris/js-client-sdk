@@ -1,17 +1,17 @@
-/* 
+/*
 * This file is part of the 0chain @zerochain/0chain distribution (https://github.com/0chain/js-client-sdk).
 * Copyright (c) 2018 0chain LLC.
-* 
-* 0chain @zerochain/0chain program is free software: you can redistribute it and/or modify  
-* it under the terms of the GNU General Public License as published by  
+*
+* 0chain @zerochain/0chain program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
 * the Free Software Foundation, version 3.
 *
-* This program is distributed in the hope that it will be useful, but 
-* WITHOUT ANY WARRANTY; without even the implied warranty of 
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+* This program is distributed in the hope that it will be useful, but
+* WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 * General Public License for more details.
 *
-* You should have received a copy of the GNU General Public License 
+* You should have received a copy of the GNU General Public License
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
@@ -20,7 +20,7 @@ const sha3 = require('js-sha3');
 const bip39 = require('bip39');
 var BlueBirdPromise = require("bluebird");
 
-//local import 
+//local import
 const utils = require('./utils');
 var models = require('./models');
 "use strict";
@@ -35,10 +35,10 @@ let bls;
 // const InterestPoolSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9";
 // const MinerSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d1";
 
-const MultiSigSmartContractAddress = '27b5ef7120252b79f9dd9c05505dd28f328c80f6863ee446daede08a84d651a7';
-const VestingSmartContractAddress = '2bba5b05949ea59c80aed3ac3474d7379d3be737e8eb5a968c52295e48333ead';
+// const MultiSigSmartContractAddress = '27b5ef7120252b79f9dd9c05505dd28f328c80f6863ee446daede08a84d651a7';
+// const VestingSmartContractAddress = '2bba5b05949ea59c80aed3ac3474d7379d3be737e8eb5a968c52295e48333ead';
+// const ZRC20SmartContractAddress = '6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d5';
 const FaucetSmartContractAddress = '6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3';
-const ZRC20SmartContractAddress = '6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d5';
 const StorageSmartContractAddress = '6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7';
 const MinerSmartContractAddress = '6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9';
 const InterestPoolSmartContractAddress = 'cf8d0df9bd8cc637a4ff4e792ffe3686da6220c45f0e1103baa609f3f1751ef4';
@@ -83,8 +83,8 @@ const Endpoints = {
     COPY_ENDPOINT: "/v1/file/copy/",
     UPLOAD_ENDPOINT: "/v1/file/upload/",
     COMMIT_ENDPOINT: "/v1/connection/commit/",
-    COPY_ENDPOINT: "/v1/file/copy/",
-    OBJECT_TREE_ENDPOINT: '/v1/file/objecttree/',
+    // COPY_ENDPOINT: "/v1/file/copy/",
+    // OBJECT_TREE_ENDPOINT: '/v1/file/objecttree/',
     COMMIT_META_TXN_ENDPOINT: "/v1/file/commitmetatxn/",
 
     //PROXY
@@ -129,7 +129,7 @@ module.exports = {
     },
 
     /////////////SDK Stuff below //////////////
-    init: function init(configObject, bls_wasm) {
+    init: async function init(configObject, bls_wasm) {
         var config;
         if (typeof configObject != "undefined" && configObject.hasOwnProperty('miners') &&
             configObject.hasOwnProperty('sharders')
@@ -169,8 +169,10 @@ module.exports = {
             };
             config = jsonContent;
         }
+
         bls = bls_wasm;
-        bls.init(bls.BN254)
+        await bls.init(bls.BN254)
+
         miners = config.miners;
         sharders = config.sharders;
         clusterName = config.clusterName;
@@ -457,7 +459,7 @@ module.exports = {
         readPrice = readPriceRange,
         challengeCompletionTime,
         expiration_days = 30) {
-        
+
         let expiration_date = new Date();
 
         Date.prototype.addDays = function (days) {
@@ -654,10 +656,10 @@ module.exports = {
             }
         }
         const readPoolLockRes =await this.executeSmartContract(ae, undefined, JSON.stringify(payload), tokens)
-     
+
         if(!readPoolLockRes.transaction_output){
             this.createReadPool(JSON.parse(localStorage.getItem("wallet_info")))
-        }        
+        }
         return readPoolLockRes;
     },
 
@@ -713,7 +715,7 @@ module.exports = {
     },
     getAllBlobbersDetails: async function getAllBlobbersDetails() {
         const currentBlobbers = await this.getAllBlobbers();
-        const detailedBlobbers = currentBlobbers.map((blobber)=>{ 
+        const detailedBlobbers = currentBlobbers.map((blobber)=>{
             const blobberUrl = new URL(blobber.url)
             blobber.convertedUrl = 'https://'+blobberUrl.hostname +'/blobber'+ blobberUrl.port.slice(-2)+'/_statsJSON'
             blobber.convertedURL = 'https://'+blobberUrl.hostname +'/blobber'+ blobberUrl.port.slice(-2)+'/_stats'
@@ -726,7 +728,7 @@ module.exports = {
             const blobStakeStats = await this.getStakePoolStat(dBl.id)
             blobJson.free_from_blobber_stake_stats = await blobStakeStats.free
             return {...blobJson,...dBl};
-       }))  
+       }))
         return detailedBlobbersCallingEachApi ;
       },
 
@@ -1084,7 +1086,7 @@ module.exports = {
 ///^^^^^^  End of expored functions   ^^^^^^////////
 
 // This method will try to get the information from any one of the sharder randomly
-// 1. shuffle the array 
+// 1. shuffle the array
 // 2. try get the information from first sharder in the array. if its success will return immedialtely with response otherwise try to get from next sharder until it reach end of array
 async function getInformationFromRandomSharder(url, params, parser) {
 
@@ -1207,7 +1209,7 @@ async function submitTransaction(ae, toClientId, val, note, transaction_type) {
     data.version = '1.0';
     data.txn_output_hash = "";
     data.public_key = ae.public_key;
-    
+
     return new Promise(function (resolve, reject) {
         utils.doParallelPostReqToAllMiners(miners, Endpoints.PUT_TRANSACTION, data)
             .then((response) => {
