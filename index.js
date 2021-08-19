@@ -945,13 +945,14 @@ module.exports = {
         return response
     },
 
-    shareObject: async function (allocation_id, path, client_id, public_encryption_key, client_json) {
+    shareObject: async function (allocation_id, path, client_id, public_encryption_key, expiration, client_json) {
         const url = proxyServerUrl + Endpoints.PROXY_SERVER_SHARE_ENDPOINT
         const params = {
             allocation: allocation_id,
             remote_path: path,
             referee_client_id: client_id,
             encryption_public_key: public_encryption_key,
+            expiration: expiration,
             client_json: client_json
         }
         const response = await utils.getReq(url, params);
