@@ -403,7 +403,7 @@ module.exports = {
             return date;
         }
 
-        expiration_date = Math.floor(expiration_date.addDays(20).getTime() / 1000)
+        expiration_date = Math.floor(expiration_date.addDays(30).getTime() / 1000)
 
         // console.log(expiration_date,"exp")
 
