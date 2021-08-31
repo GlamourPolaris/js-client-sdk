@@ -26,8 +26,11 @@ var models = require('./models');
 "use strict";
 
 var miners, proxyServerUrl, zeroBoxUrl, sharders, clusterName, version;
-var preferredBlobbers, tokenLock;
-var readPrice, writePrice;
+var readPriceRange, writePriceRange, dataShards, parityShards, allocationSize;
+var maxChallengeCompletionTime;
+var readPrice, writePrice; // eslint-disable-line
+var preferredBlobbers; // eslint-disable-line
+var tokenLock;
 let bls;
 
 // const StorageSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7";
@@ -262,7 +265,7 @@ module.exports = {
     },
 
     getBalance: (client_id) => {
-        return new Promise(async function (resolve, reject) {
+        return new Promise(function (resolve, reject) {
             utils.getConsensusedInformationFromSharders(sharders, Endpoints.GET_BALANCE, { client_id: client_id })
                 .then((res) => {
                     resolve(res);
@@ -282,12 +285,12 @@ module.exports = {
     },
 
     getLockedTokens: (client_id) => {
-        return new Promise(async function (resolve, reject) {
+        return new Promise(function (resolve) {
             utils.getConsensusedInformationFromSharders(sharders, Endpoints.GET_LOCKED_TOKENS, { client_id: client_id })
                 .then((res) => {
                     resolve(res);
                 })
-                .catch((error) => {
+                .catch(() => {
                     resolve({
                         locked_tokens: []
                     })
@@ -296,7 +299,7 @@ module.exports = {
     },
 
     getUserPools: (client_id) => {
-        return new Promise(async function (resolve, reject) {
+        return new Promise(function (resolve) {
             utils.getConsensusedInformationFromSharders(sharders, Endpoints.GET_USER_POOLS, { client_id: client_id })
                 .then((res) => {
                     if (res.pools === null) {
@@ -306,7 +309,7 @@ module.exports = {
                     }
                     resolve(res);
                 })
-                .catch((error) => {
+                .catch(() => {
                     resolve({
                         pools: []
                     })
@@ -575,7 +578,7 @@ module.exports = {
                         }
                         response[url] = activeUrls
                     })
-                    .catch((err) => {
+                    .catch(() => {
                         response[url] = [];
                         isAllSuccess = false;
                     });
@@ -587,12 +590,12 @@ module.exports = {
     },
 
     getStakeLockedToken: (client_id) => {
-        return new Promise(async function (resolve, reject) {
+        return new Promise(async function (resolve) { // eslint-disable-line
             let minerSharderStake = await utils.getConsensusedInformationFromSharders(sharders, Endpoints.GET_MINERSC_POOL_STATS, { client_id })
                 .then((res) => {
                     return res;
                 })
-                .catch((error) => {
+                .catch(() => {
                     return null;
                 })
 
@@ -604,7 +607,7 @@ module.exports = {
                 .then((res) => {
                     return res;
                 })
-                .catch((error) => {
+                .catch(() => {
                     return null;
                 })
 
@@ -619,17 +622,19 @@ module.exports = {
     },
 
     getStakePoolStat:(blobber_id)=>{
-        return new Promise(async function (resolve,reject){
-            let stakePoolStat = await utils.getConsensusedInformationFromSharders(sharders,Endpoints.GET_STAKE_POOL_STAT,{blobber_id})
-                .then(res=>{
-                    // console.log(res,"res of stake of blobbers")
-                    return res
-                })
-                .catch(err=> null)
-            if(stakePoolStat ===null){
+        return new Promise(async function (resolve) { // eslint-disable-line
+            let stakePoolStat = await utils.getConsensusedInformationFromSharders(
+              sharders,Endpoints.GET_STAKE_POOL_STAT,{blobber_id}
+            )
+              .then(res => {
+                  return res
+              })
+              .catch(() => null)
+
+            if (stakePoolStat === null) {
                 stakePoolStat = []
             }
-            resolve({...stakePoolStat})
+            resolve({ ...stakePoolStat })
         })
     },
 
@@ -713,6 +718,7 @@ module.exports = {
                 return response;
             });
     },
+
     getAllBlobbersDetails: async function getAllBlobbersDetails() {
         const currentBlobbers = await this.getAllBlobbers();
         const detailedBlobbers = currentBlobbers.map((blobber)=>{
@@ -735,7 +741,7 @@ module.exports = {
     getAllocationSharedFilesFromPath: async function (allocation_id, lookup_hash, client_id, auth_token = "") {
         var blobber_url;
         const completeAllocationInfo = await this.allocationInfo(allocation_id);
-        blobber = completeAllocationInfo.blobbers[0].url;
+        const blobber = completeAllocationInfo.blobbers[0].url;
         blobber_url = blobber + Endpoints.ALLOCATION_FILE_LIST + allocation_id
         const list = await utils.getReqBlobbers(blobber_url, { path_hash: lookup_hash, auth_token: auth_token }, client_id);
 
@@ -746,7 +752,7 @@ module.exports = {
         var blobber_url;
 
         const completeAllocationInfo = await this.allocationInfo(allocation_id);
-        blobber = completeAllocationInfo.blobbers[0].url;
+        const blobber = completeAllocationInfo.blobbers[0].url;
         blobber_url = blobber + Endpoints.ALLOCATION_FILE_LIST + allocation_id
 
         const list = await utils.getReqBlobbers(blobber_url, { path: path }, client_id);
@@ -757,7 +763,7 @@ module.exports = {
     getAllocationFilesFromHash: async function (allocation_id, lookup_hash, client_id) {
         var blobber_url;
         const completeAllocationInfo = await this.allocationInfo(allocation_id);
-        blobber = completeAllocationInfo.blobbers[0].url;
+        const blobber = completeAllocationInfo.blobbers[0].url;
         blobber_url = blobber + Endpoints.ALLOCATION_FILE_LIST + allocation_id
 
         const list = await utils.getReqBlobbers(blobber_url, { path_hash: lookup_hash }, client_id);
@@ -768,7 +774,7 @@ module.exports = {
     getFileMetaDataFromPath: async function (allocation_id, path, client_id) {
         const completeAllocationInfo = await this.allocationInfo(allocation_id);
         const blobber = completeAllocationInfo.blobbers[0].url;
-        return new Promise(async function (resolve, reject) {
+        return new Promise(async function (resolve, reject) { // eslint-disable-line
             const blobber_url = blobber + Endpoints.FILE_META_ENDPOINT + allocation_id;
             const response = await utils.postReqToBlobber(blobber_url, {}, { path: path }, client_id);
             if (response.status === 200) {
@@ -783,20 +789,27 @@ module.exports = {
         });
     },
 
-    getFileStatsFromPath: async function (allocation_id, path, client_id) {
+    getFileStatsFromPath: async function (allocation_id, pathFormData, client_id, private_key, public_key) {
         const completeAllocationInfo = await this.allocationInfo(allocation_id);
-        return new Promise(async function (resolve, reject) {
+        const allocIdHash = sha3.sha3_256(allocation_id)
+        const signature = this.getSign(allocIdHash, private_key)
+
+        return new Promise(async function (resolve, reject) { // eslint-disable-line
             let allBlobbersResponse = []
+
             for (let blobber of completeAllocationInfo.blobbers) {
                 const blobber_url = blobber.url + Endpoints.FILE_STATS_ENDPOINT + allocation_id;
-                await utils.postReqToBlobber(blobber_url, {}, { path: path }, client_id)
+
+                await utils.postReqToBlobber(blobber_url, pathFormData, {}, client_id, public_key, signature)
                     .then((response) => {
-                       // console.log(response,"response from blobbers")
-                        allBlobbersResponse.push({ ...response.data, url: blobber.url })
-                    }).catch((err) => {
-                        console.log(err)
+                        if (!response.data) { // TODO: properly handle errors on POST reqs
+                          console.error(response)
+                        } else {
+                          allBlobbersResponse.push({ ...response.data, url: blobber.url })
+                        }
                     })
             }
+
             if (allBlobbersResponse.length > 0) {
                 resolve(allBlobbersResponse);
             } else {
@@ -808,7 +821,8 @@ module.exports = {
     getFileMetaDataFromPathHash: async function (allocation_id, path_hash, auth_ticket, client_id) {
         const completeAllocationInfo = await this.allocationInfo(allocation_id);
         const blobber = completeAllocationInfo.blobbers[0].url;
-        return new Promise(async function (resolve, reject) {
+
+        return new Promise(async function (resolve, reject) { // eslint-disable-line
             const blobber_url = blobber + Endpoints.FILE_META_ENDPOINT + allocation_id;
             const response = await utils.postReqToBlobber(blobber_url, {}, { path_hash: path_hash, auth_token: atob(auth_ticket) }, client_id);
             if (response.status === 200) {
@@ -854,14 +868,14 @@ module.exports = {
 
     updateMetaCommitToBlobbers: async function (transaction_hash, allocation, lookup_hash, client_id, auth_ticket = "") {
         const completeAllocationInfo = await this.allocationInfo(allocation);
-        blobber_list = completeAllocationInfo.blobbers.map(blobber => {
+        const blobber_list = completeAllocationInfo.blobbers.map(blobber => {
             return blobber.url
         });
 
-        return new Promise(async (resolve, reject) => {
+        return new Promise(async (resolve, reject) => { // eslint-disable-line
             for (let blobber of blobber_list) {
                 try {
-                    blobber_url = blobber + Endpoints.COMMIT_META_TXN_ENDPOINT + allocation;
+                    const blobber_url = blobber + Endpoints.COMMIT_META_TXN_ENDPOINT + allocation;
                     const formData = new FormData();
                     formData.append('path_hash', lookup_hash);
                     formData.append('txn_id', transaction_hash);
@@ -1041,8 +1055,8 @@ module.exports = {
         return response
     },
 
-    getSign: function (client_id, secretKey) {
-        const bytehash = utils.hexStringToByte(client_id);
+    getSign: function (hexHash, secretKey) {
+        const bytehash = utils.hexStringToByte(hexHash);
         const sec = new bls.SecretKey();
         sec.deserializeHexStr(secretKey);
         const sig = sec.sign(bytehash);
@@ -1056,7 +1070,7 @@ module.exports = {
         return response
     },
 
-    getReferralsInfo: async function (activeWallet) {
+    getReferralsInfo: async function (activeWallet) { // eslint-disable-line
         const url = zeroBoxUrl + Endpoints.ZEROBOX_SERVER_REFERRALS_INFO_ENDPOINT;
         // const clientSignature = this.getSign(activeWallet.id, activeWallet.secretKey);
         const response = await utils.getReferrals(url);
@@ -1090,10 +1104,7 @@ module.exports = {
 // 1. shuffle the array
 // 2. try get the information from first sharder in the array. if its success will return immedialtely with response otherwise try to get from next sharder until it reach end of array
 async function getInformationFromRandomSharder(url, params, parser) {
-
-    var errResp = [];
-
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
         const urls = sharders.map(sharder => sharder + url);
         const promises = urls.map(url => utils.getReq(url, params));
         BlueBirdPromise.some(promises, 1)
@@ -1105,28 +1116,7 @@ async function getInformationFromRandomSharder(url, params, parser) {
             })
             .catch(BlueBirdPromise.AggregateError, function (err) {
                 reject({ error: err[0].code });
-                // err.forEach(function (e) {
-                //     console.error(e.stack);
-                // });
             });
-
-
-        // for (let sharder of utils.shuffleArray(sharders)) {
-        //     //console.log("Calling sharder .....", sharder)
-        //     try {
-        //         response = await utils.getReq(sharder + url, params); //sharder + url
-        //         //console.log("response from sharder",response.data);
-        //         if (response.data) {
-        //             const data = typeof parser !== "undefined" ? parser(response.data) : response.data;
-        //             resolve(data);
-        //             break;
-        //         }
-        //     }
-        //     catch (error) {
-        //         errResp.push({ "sharder": sharder, "error": error });
-        //     }
-        // }
-        // reject(errResp);
     });
 
 }

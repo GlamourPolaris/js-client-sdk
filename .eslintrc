@@ -10,5 +10,6 @@
         "ecmaVersion": 12
     },
     "rules": {
+      "no-prototype-builtins": 0
     }
 }
