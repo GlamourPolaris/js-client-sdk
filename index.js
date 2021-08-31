@@ -18,11 +18,12 @@
 // const nacl = require('tweetnacl');
 const sha3 = require('js-sha3');
 const bip39 = require('bip39');
-var BlueBirdPromise = require("bluebird");
+const BlueBirdPromise = require("bluebird");
+const FormData = require('form-data')
 
 //local import
 const utils = require('./utils');
-var models = require('./models');
+const models = require('./models');
 "use strict";
 
 var miners, proxyServerUrl, zeroBoxUrl, sharders, clusterName, version;
@@ -789,7 +790,7 @@ module.exports = {
         });
     },
 
-    getFileStatsFromPath: async function (allocation_id, pathFormData, client_id, private_key, public_key) {
+    getFileStatsFromPath: async function (allocation_id, filePath, client_id, private_key, public_key) {
         const completeAllocationInfo = await this.allocationInfo(allocation_id);
         const allocIdHash = sha3.sha3_256(allocation_id)
         const signature = this.getSign(allocIdHash, private_key)
@@ -799,6 +800,9 @@ module.exports = {
 
             for (let blobber of completeAllocationInfo.blobbers) {
                 const blobber_url = blobber.url + Endpoints.FILE_STATS_ENDPOINT + allocation_id;
+
+                const pathFormData = new FormData()
+                pathFormData.append('path', filePath)
 
                 await utils.postReqToBlobber(blobber_url, pathFormData, {}, client_id, public_key, signature)
                     .then((response) => {
