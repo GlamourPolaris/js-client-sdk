@@ -1,17 +1,17 @@
-/* 
+/*
 * This file is part of the 0chain @zerochain/0chain distribution (https://github.com/0chain/client-sdk).
 * Copyright (c) 2018 0chain LLC.
-* 
-* 0chain @zerochain/0chain program is free software: you can redistribute it and/or modify  
-* it under the terms of the GNU General Public License as published by  
+*
+* 0chain @zerochain/0chain program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
 * the Free Software Foundation, version 3.
 *
-* This program is distributed in the hope that it will be useful, but 
-* WITHOUT ANY WARRANTY; without even the implied warranty of 
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+* This program is distributed in the hope that it will be useful, but
+* WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 * General Public License for more details.
 *
-* You should have received a copy of the GNU General Public License 
+* You should have received a copy of the GNU General Public License
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
@@ -20,9 +20,7 @@
 var sha3 = require('js-sha3');
 var JSONbig = require('json-bigint');
 const axios = require('axios');
-const PromiseAll = require('promises-all');
 var BlueBirdPromise = require("bluebird");
-var rp = require('request-promise');
 const moment = require('moment')
 
 const consensusPercentage = 20;
@@ -45,15 +43,6 @@ const getConsensusMessageFromResponse = function (hashedResponses, consensusNo, 
     if (maxResponses.val >= consensusNo) {
         let responseIndex = hashedResponses.indexOf(maxResponses.key);
         return responseArray[responseIndex];
-        // console.log("responseIndex => ", responseIndex);
-        // let finalResponse = responseArray[responseIndex].data;
-        // console.log("response => ", responseArray[responseIndex]);
-        // console.log("Final response =>", finalResponse);
-        // if (finalResponse) {
-        //     console.log("parser => ", parser);
-        //     const data = typeof parser !== "undefined" ? parser(finalResponse) : finalResponse;
-        //     return data;
-        // }
     }
     else {
         return null;
@@ -77,7 +66,6 @@ module.exports = {
             hex = (hex.length === 1) ? '0' + hex : hex;
             hexStr += hex;
         }
-        //console.log("byteToHexString returning non-empty value")	
         return hexStr;
     },
 
@@ -89,7 +77,6 @@ module.exports = {
         for (var i = 0, len = str.length; i < len; i += 2) {
             a.push(parseInt(str.substr(i, 2), 16));
         }
-        //console.log("HexStringToByte returning non-empty")
         return new Uint8Array(a);
     },
 
@@ -152,7 +139,7 @@ module.exports = {
        A utility function to make a post request.
        url: Complete URL along with path to where the post request is to be sent
        jsonPostString: A stringfy of JSON object the payload for the request
-       Return: Returns a Promise.  
+       Return: Returns a Promise.
    */
 
     postReq: function postReq(url, data, option) {
@@ -259,16 +246,24 @@ module.exports = {
         return result;
     },
 
-    postReqToBlobber: function postReqToBlobber(url, data, params, clientId) {
+    postReqToBlobber: function postReqToBlobber(url, data, params, clientId, public_key, signature) {
+        const headers = {
+            'X-App-Client-ID': clientId,
+            'X-App-Client-Key': public_key,
+            'Content-Type': 'application/x-www-form-urlencoded',
+        }
+
+        if (signature) {
+          headers['X-App-Client-Signature'] = signature
+          headers['Content-Type'] = `multipart/form-data; boundary=${data._boundary}`
+        }
+
         return axios({
             method: 'post',
-            url: url,
-            headers: {
-                'X-App-Client-ID': clientId,
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            params: params,
-            data: data
+            headers,
+            params,
+            data,
+            url,
         }).then((response) => {
             return response
         }).catch((error) => {
@@ -283,7 +278,7 @@ module.exports = {
             headers: {
                 'X-App-Client-ID': clientId
             },
-            transformResponse: function (data, headers) {
+            transformResponse: function (data) {
                 return self.parseJson(data)
             }
         });
@@ -293,7 +288,7 @@ module.exports = {
         const self = this;
         return axios.get(url, {
             params: params,
-            transformResponse: function (data, headers) {
+            transformResponse: function (data) {
                 return self.parseJson(data)
             }
         });
@@ -329,9 +324,8 @@ module.exports = {
                     if (consensusResponse === null) {
                         reject({ error: "Not enough consensus" });
                     } else {
-                        // console.log('consensusResponse from sdk', consensusResponse);
                         // Added patch for converting http to https
-                        
+
                         if (/* window.location.protocol === "https" && */ consensusResponse.data && consensusResponse.data.blobbers && Array.isArray(consensusResponse.data.blobbers)) {
                             consensusResponse.data.blobbers.forEach((blobber) => {
                                 let currentURL = new URL(blobber.url);
@@ -368,48 +362,6 @@ module.exports = {
                         }
                     }
                 });
-
-
-            // PromiseAll.all(promises).then(function (result) {
-            //     // console.log("result.reject", result.reject);
-            //     // This is needed otherwise error will print big trace from axios
-            //     let consensusNo = ((sharders.length * 20) / 100);
-            //     if (result.resolve.length >= consensusNo) {
-            //         const hashedResponses = result.resolve.map(r => {
-            //             return sha3.sha3_256(JSON.stringify(r.data))
-            //         });
-
-            //         const consensusResponse = getConsensusMessageFromResponse(hashedResponses, consensusNo, result.resolve);
-            //         if (consensusResponse === null) {
-            //             reject({ error: "Not enough consensus" });
-            //         }
-            //         else {
-            //             resolve(parseConsensusMessage(consensusResponse.data, parser));
-            //         }
-            //     }
-            //     else {
-            //         const errors = result.reject.map(e => {
-            //             if (e.response.status !== undefined && e.response.status === 400 && e.response.data !== undefined) {
-            //                 return sha3.sha3_256(JSON.stringify(e.response.data))
-            //             }
-            //             else {
-            //                 return e.message
-            //             }
-            //         });
-            //         const consensusErrorResponse = getConsensusMessageFromResponse(errors, consensusNo, result.reject, undefined);
-            //         if (consensusErrorResponse === null) {
-            //             reject({ error: "Not enough consensus" });
-            //         }
-            //         else {
-            //             reject(parseConsensusMessage(consensusErrorResponse.response.data));
-            //         }
-            //         // return error here
-            //         // reject({ error: errors });
-            //     }
-            // }, function (error) {
-            //     console.error("This should never happen", error);
-            //     reject({ error: error });
-            // });
         });
     },
 
@@ -425,28 +377,7 @@ module.exports = {
                 })
                 .catch(BlueBirdPromise.AggregateError, function (err) {
                     reject({ error: err[0].code });
-                    // err.forEach(function (e) {
-                    //     console.error(e.stack);
-                    // });
                 });
-
-            // PromiseAll.all(promises).then(function (result) {
-            //     // This is needed otherwise error will print big trace from axios
-            //     const errors = result.reject.map(e => e.message);
-            //     if (result.resolve.length === 0) {
-            //         // return error here
-            //         reject({ error: errors });
-            //     }
-            //     else {
-            //         //console.log("Response", result.resolve[0].data);
-            //         //resolve({ data: result.resolve[0].data, error: errors })
-            //         resolve(result.resolve[0].data);
-            //     }
-            // }, function (error) {
-            //     reject({ error: error });
-            // });
-
-
         });
     }
 }
