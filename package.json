@@ -1,6 +1,6 @@
 {
   "name": "@zerochain/0chain",
-  "version": "1.3.64",
+  "version": "1.3.65",
   "description": "js client library to interact with 0chain Blockchain",
   "main": "index.js",
   "scripts": {
@@ -10,16 +10,15 @@
   "author": "0chain",
   "license": "GPL",
   "dependencies": {
-    "axios": "^0.21.1",
+    "axios": "^0.21.4",
     "bip39": "^2.5.0",
-    "bls-wasm": "^0.3.0",
+    "bls-wasm": "^0.4.4",
     "js-sha3": "^0.8.0",
     "json-bigint": "^1.0.0",
     "moment": "^2.24.0",
     "promises-all": "^1.0.0",
     "request": "^2.88.2",
-    "request-promise": "^4.2.5",
-    "tweetnacl": "^1.0.0"
+    "request-promise": "^4.2.5"
   },
   "devDependencies": {
     "eslint": "^7.32.0"
