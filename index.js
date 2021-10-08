@@ -1194,7 +1194,7 @@ async function submitTransaction(ae, toClientId, val, note, transaction_type) {
     var data = {};
     data.client_id = ae.id;
     data.transaction_value = val;
-    data.transaction_data = note;
+    data.transaction_data = { note };
     data.transaction_type = transaction_type;
     data.creation_date = ts;
     data.to_client_id = toClientId;
