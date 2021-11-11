@@ -1,29 +1,35 @@
 # 0chain Client SDK for Node
 
-This is Node.js implementation of 0chain js-client-sdk. Use this SDK to interact with 0Chain blockchain. The SDK supports wallet creation, transaction submission and verification. In addition to that, the sdk provides APIs to query blockchain health itself. See *example.js* file for more details. 
+This is Node.js implementation of 0chain js-client-sdk. Use this SDK to interact with 0Chain blockchain. The SDK supports wallet creation, transaction submission and verification. In addition to that, the sdk provides APIs to query blockchain health itself. See _example.js_ file for more details.
 
 ## Installation
-Via Github: <https://github.com/0chain/js-client-sdk> 
+
+Via Github: <https://github.com/0chain/js-client-sdk>
 
 ## APIs
-All functions except ```init()``` returns promise.
 
-First  ```import / require ``` the library from github <https://github.com/0chain/js-client-sdk> 
+All functions except `init()` returns promise.
+
+First `import / require ` the library from github <https://github.com/0chain/js-client-sdk>
 
 ```
 import jsClientSdk from '@zerochain/0chain';
 ```
+
 ## Initialize
-Before any function in the SDK to be called, the *init* function with the cluster configuration and bls-wasm instance should be called. 
+
+Before any function in the SDK to be called, the _init_ function with the cluster configuration and bls-wasm instance should be called.
 
 ## bls-wasm dependency
 
 While initialising js-client-sdk, a bls instance is to be passed. bls can be installed via npm using the below command:
+
 ```
 npm install bls-wasm
 ```
+
 Github Repository:
-```https://github.com/herumi/bls-wasm```
+`https://github.com/herumi/bls-wasm`
 
 **Input Parameters**
 
@@ -33,7 +39,7 @@ config -- json string containig cluster configuration
 
 None
 
-The below code shows an example of initiailizing the SDK with *0chain-local-cluster*. 
+The below code shows an example of initiailizing the SDK with _0chain-local-cluster_.
 
 ```
 var config = {
@@ -68,11 +74,13 @@ var config = {
 }
 jsClientSdk.init(config, bls)
 ```
+
 To use local cluster, call init with bls-wasm instance configuration
 
 ```
 jsClientSdk.init(bls)
 ```
+
 ## registerClient
 
 Registers a client with 0Chain Blockchain.
@@ -94,11 +102,11 @@ Restore a existing client with 0Chain Blockchain. Need to pass the secret mnemon
 
 **Input Parameters**
 
-mnemonic -- string 
+mnemonic -- string
 
 **Output**
 
- Wallet  --if successful. Error otherwise
+Wallet --if successful. Error otherwise
 
 ```
 jsClientSdk.restoreWallet(mnemonic)
@@ -112,7 +120,7 @@ Use this function send tokens from one wallet to the other.
 
 fromAccount - From Wallet
 
-toWalletId  - To wallet clientId
+toWalletId - To wallet clientId
 
 value - amount to send
 
@@ -120,7 +128,7 @@ note - description for the transaction
 
 **Ouput**
 
- Transaction --if successful. Error otherwise
+Transaction --if successful. Error otherwise
 
 ```
 jsClientSdk.sendTransaction(fromAccount, toWalletId, value, note)
@@ -134,7 +142,7 @@ Use this function to store data on a wallet
 
 fromAccount - From Wallet
 
-data  - data to save in the blockchain (string type)
+data - data to save in the blockchain (string type)
 
 note - description for the transaction
 
@@ -144,21 +152,21 @@ Transaction --if successful. Error otherwise
 
 ```
 jsClientSdk.storeData(fromAccount, data, note)
-``` 
+```
+
 ## checkTransactionStatus
 
-Use this function to check the status of the transaction that has been placed earlier. 
+Use this function to check the status of the transaction that has been placed earlier.
 
-*Note* Transaction status will be available only after the transaction is processed. Please provide at least 3 seconds time for the transaction to process. You can check status multiple times.
+_Note_ Transaction status will be available only after the transaction is processed. Please provide at least 3 seconds time for the transaction to process. You can check status multiple times.
 
 **Input Parameters**
 
 hash - Hash of the transaction that was placed earlier
 
-
 **Ouput**
 
-TransactionDetails  -- Details of the transaction which has the status field.
+TransactionDetails -- Details of the transaction which has the status field.
 
 ```
 jsClientSdk.checkTransactionStatus(hash)
@@ -172,11 +180,9 @@ Use this function to get the balance of particular wallet.
 
 client_id - The clientId whose balance you are interested in
 
-
 **Ouput**
 
-TransactionDetails  -- Details of the transaction which has the balance field.
-
+TransactionDetails -- Details of the transaction which has the balance field.
 
 ```
 jsClientSdk.getBalance(client_id)
@@ -184,13 +190,13 @@ jsClientSdk.getBalance(client_id)
 
 ## executeSmartContract
 
-sends a transaction of the specified amount as mentioned in the value parameter fromAccount toWalletId. 
+sends a transaction of the specified amount as mentioned in the value parameter fromAccount toWalletId.
 
 **Input Parameters**
 
 fromAccount - from Wallet
 
-smartContractAddress  - address of intended smartContract
+smartContractAddress - address of intended smartContract
 
 payload - depends on the smartContract function that is being executed
 
@@ -219,7 +225,7 @@ errCallback -- function to be called upon failure
 
 **Output**
 
-Block Summary or Block object depending on the options specified 
+Block Summary or Block object depending on the options specified
 
 ```
 jsClientSdk.getBlockInfoByHash(hash, options, callback, errCallback)
@@ -231,7 +237,7 @@ Use this function to get the block summary or block detail by round number.
 
 **Input Parameters**
 
-round  -- round number
+round -- round number
 options -- use BlockInfoOptions.HEADER to get only the summary or BlockInfoOptions.Full to get entire block. Default is HEADER
 
 callback -- function to be called upon success
@@ -240,12 +246,11 @@ errCallback -- function to be called upon failure
 
 **Output**
 
-Block Summary or Block object depending on the options specified 
+Block Summary or Block object depending on the options specified
 
 ```
 jsClientSdk.getBlockInfoByRound(round, options, callback, errCallback)
 ```
-
 
 ## getChainStats
 
@@ -257,7 +262,7 @@ none
 
 **Output**
 
-ChainStats  --an object that has detailed information about the blockchain.
+ChainStats --an object that has detailed information about the blockchain.
 
 ```
 jsClientSdk.getChainStats()
@@ -273,7 +278,7 @@ None
 
 **Output**
 
-BlockSummary  --object if successful that has information of latest finalized block
+BlockSummary --object if successful that has information of latest finalized block
 
 ```
 jsClientSdk.getLatestFinalized()
@@ -296,6 +301,18 @@ jsClientSdk.getRecentFinalized()
 ```
 
 ## Example file
-The SDK also comes with an **example.js** file that demonstrates how the APIs can be used. 
 
- 
+The SDK also comes with an **example.js** file that demonstrates how the APIs can be used.
+
+## Update jssdk version:
+
+From the master local repo :
+
+- `npm login` if you are not logged in
+- `npm version <version-type>`
+
+`<version-type>` can be patch, minor or major
+
+- `npm publish`
+
+- `git push` to sync `npm version` change with the `js-sdk` repo.

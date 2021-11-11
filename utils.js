@@ -230,14 +230,15 @@ module.exports = {
 
     },
 
-    deleteMethodTo0box: function (url, data, clientId, public_key) {
+    deleteMethodTo0box: function (url, data, clientId, public_key,client_signature) {
+       
         const result = axios({
             method: 'delete',
             url: url,
             headers: {
                 'X-App-Client-ID': clientId,
                 'X-App-Client-Key': public_key,
-                'X-App-Signature': 1234,
+                'X-App-Signature': client_signature,
                 'X-App-Timestamp': new Date().getTime()
             },
             data: data,
