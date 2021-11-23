@@ -10,7 +10,7 @@
   "author": "0chain",
   "license": "GPL",
   "dependencies": {
-    "axios": "^0.21.4",
+    "axios": "^0.24.0",
     "bip39": "^2.5.0",
     "bls-wasm": "^0.4.4",
     "js-sha3": "^0.8.0",
