@@ -197,8 +197,7 @@ module.exports = {
             headers: {
                 'X-App-Client-ID': clientId,
                 'X-App-Client-Key': clientkey,
-                'X-App-Signature': 1234,
-                'X-App-Client-Signature': client_signature,
+                'X-App-Signature': client_signature,
                 'X-App-Timestamp' : new Date().getTime()
             },
         })
@@ -214,33 +213,47 @@ module.exports = {
         })
     },
 
-    postMethodTo0box: function (url, data, clientId, public_key) {
+    postMethodTo0box: function (url, data, clientId, public_key,client_signature, id_token) {
+
+        const headers = {
+            'X-App-ID-TOKEN': id_token,
+            'X-App-Client-ID': clientId,
+            'X-App-Client-Key': public_key,
+            'X-App-Timestamp': new Date().getTime(),
+            'X-App-Signature':1234,
+        }
+
+        if (client_signature) {
+            headers['X-App-Signature'] = client_signature
+        }
+
         return axios({
             method: 'post',
             url: url,
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-App-Client-ID': clientId,
-                'X-App-Client-Key': public_key,
-                'X-App-Signature': 1234,
-                'X-App-Timestamp': new Date().getTime(),
-            },
+            headers: headers,
             data: data,
         });
 
     },
 
-    deleteMethodTo0box: function (url, data, clientId, public_key,client_signature) {
+    deleteMethodTo0box: function (url, data, clientId, public_key, client_signature, id_token) {
        
+        const headers = {
+            'X-App-ID-TOKEN':id_token,
+            'X-App-Client-ID': clientId,
+            'X-App-Client-Key': public_key,
+            'X-App-Timestamp':new Date().getTime(),
+            'X-App-Signature':1234
+        }
+
+        if (client_signature) {
+            headers['X-App-Signature'] = client_signature
+        }
+
         const result = axios({
             method: 'delete',
             url: url,
-            headers: {
-                'X-App-Client-ID': clientId,
-                'X-App-Client-Key': public_key,
-                'X-App-Signature': client_signature,
-                'X-App-Timestamp': new Date().getTime()
-            },
+            headers: headers,
             data: data,
         });
 

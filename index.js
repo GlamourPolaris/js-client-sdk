@@ -772,12 +772,14 @@ module.exports = {
         return list
     },
 
-    getFileMetaDataFromPath: async function (allocation_id, path, client_id, public_key) {
-        const completeAllocationInfo = await this.allocationInfo(allocation_id);
+    getFileMetaDataFromPath: async function (allocation_id, path, client_id, private_key, public_key) {
+        const completeAllocationInfo = await this.allocationInfo(allocation_id);        
+        const allocIdHash = sha3.sha3_256(allocation_id)
+        const signature = this.getSign(allocIdHash, private_key)
         const blobber = completeAllocationInfo.blobbers[0].url;
         return new Promise(async function (resolve, reject) { // eslint-disable-line
             const blobber_url = blobber + Endpoints.FILE_META_ENDPOINT + allocation_id;
-            const response = await utils.postReqToBlobber(blobber_url, {}, { path: path }, client_id, public_key);
+            const response = await utils.postReqToBlobber(blobber_url, {}, { path: path }, client_id, public_key, signature);
             if (response.status === 200) {
                 const res = {
                     ...response.data,
@@ -790,7 +792,7 @@ module.exports = {
         });
     },
 
-    getFileStatsFromPath: async function (allocation_id, filePath, client_id, private_key, public_key) {
+    getFileStatsFromPath: async function (allocation_id, filePath, client_id, private_key, public_key) {        
         const completeAllocationInfo = await this.allocationInfo(allocation_id);
         const allocIdHash = sha3.sha3_256(allocation_id)
         const signature = this.getSign(allocIdHash, private_key)
@@ -844,7 +846,7 @@ module.exports = {
     commitMetaTransaction: async function (ae, crudType, allocation_id, path = '', auth_ticket = '', lookuphash = '', metadata = '') {
         if (metadata.length === 0) {
             if (path.length > 0) {
-                metadata = await this.getFileMetaDataFromPath(allocation_id, path, ae.id, ae.public_key)
+                metadata = await this.getFileMetaDataFromPath(allocation_id, path, ae.id, ae.secretKey, ae.public_key)
             } else if (auth_ticket.length > 0) {
                 const at = utils.parseAuthTicket(auth_ticket)
                 metadata = await this.getFileMetaDataFromPathHash(at.allocation_id, lookuphash, auth_ticket, ae.id, ae.public_key)
@@ -1012,7 +1014,7 @@ module.exports = {
         data.append('id_token', tokenId);
         data.append('phone_num', phone);
         data.append('app_id', "0x00");
-        const response = await utils.postMethodTo0box(url, data, activeWallet.id, activeWallet.public_key);
+        const response = await utils.postMethodTo0box(url, data, activeWallet.id, activeWallet.public_key,"", tokenId);
         return response
     },
 
@@ -1023,7 +1025,7 @@ module.exports = {
         data.append('phone_num', phone_num);
         data.append('encryption_key',encryption_key);
         data.append('username', username);
-        const response= await utils.postMethodTo0box(url, data,client_id, client_key);
+        const response= await utils.postMethodTo0box(url, data,client_id, client_key, "", id_token);
         return response;
     },
 
@@ -1032,30 +1034,30 @@ module.exports = {
         const data = new FormData();
         data.append('id_token', id_token);
         data.append('phone_num', phone_num);
-        const reponse = await utils.deleteMethodTo0box(url,data, client_id,client_key);
+        const reponse = await utils.deleteMethodTo0box(url,data, client_id,client_key,"", id_token);
         return reponse;
     },
 
-    postShareInfo: async function (authTicket, activeWallet, message, fromInfo, receiver_id, ae) {
+    postShareInfo: async function (authTicket, activeWallet, message, fromInfo, receiver_id) {
         const url = zeroBoxUrl + Endpoints.ZEROBOX_SERVER_SHARE_INFO_ENDPOINT;
-        const client_signature = this.getSign(ae.id, ae.secretKey);
+        const client_signature = this.getSign(activeWallet.clientId, activeWallet.secretKey);
         const data = new FormData();
         data.append('auth_tickets', JSON.stringify(authTicket));
         data.append('message', message);
         data.append('from_info', fromInfo);
         data.append('reciever_client_id', receiver_id);
         data.append('client_signature', client_signature);
-        const response = await utils.postMethodTo0box(url, data, ae.id, ae.client_key);
+        const response = await utils.postMethodTo0box(url, data, activeWallet.clientId, activeWallet.client_key, client_signature, "");
         return response
     },
 
     deleteSharedObject: async function (authTicket, activeWallet) {
         const url = zeroBoxUrl + Endpoints.ZEROBOX_SERVER_SHARE_INFO_ENDPOINT;
-        const sig = this.getSign(activeWallet.id, activeWallet.secretKey);
+        const signature = this.getSign(activeWallet.id, activeWallet.secretKey);
         const data = new FormData();
         data.append('client_signature', sig);
         data.append('auth_ticket', authTicket)
-        const response = await utils.deleteMethodTo0box(url, data, activeWallet.id, activeWallet.public_key, sig);
+        const response = await utils.deleteMethodTo0box(url, data, activeWallet.id, activeWallet.public_key, signature);
         return response
     },
 
