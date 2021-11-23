@@ -136,9 +136,9 @@ bip39@^2.5.0:
     unorm "^1.3.3"
 
 bls-wasm@^0.4.4:
-  version "0.4.4"
-  resolved "https://registry.yarnpkg.com/bls-wasm/-/bls-wasm-0.4.4.tgz#8d66e2ac00627f934aae1f434686f371c3c24152"
-  integrity sha512-aWecwBe9weKwl5Bb5jj7crSHIgyjVbgUjHeudQeKbRqC3gFHZcf1jTfLTlnCFQnzg+wJklX0GJbWvpHN5voILA==
+  version "0.4.7"
+  resolved "https://registry.yarnpkg.com/bls-wasm/-/bls-wasm-0.4.7.tgz#0e9295e87599e8246561c5061a93081bd60eb048"
+  integrity sha512-a0SCBbHaAaluT+3v/jNRxmHgA2mMx6LDYQze5CJap6GbuRwu6FUmYP0m+bWqOZSJiNQKz4hK3UWw8l9OCDcySQ==
 
 bluebird@^3.4.7:
   version "3.5.3"
