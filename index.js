@@ -824,13 +824,14 @@ module.exports = {
         });
     },
 
-    getFileMetaDataFromPathHash: async function (allocation_id, path_hash, auth_ticket, client_id, public_key) {
+    getFileMetaDataFromPathHash: async function (allocation_id, path_hash, auth_ticket, client_id, private_key, public_key) {
         const completeAllocationInfo = await this.allocationInfo(allocation_id);
         const blobber = completeAllocationInfo.blobbers[0].url;
-
+        const allocIdHash = sha3.sha3_256(allocation_id)
+        const signature = this.getSign(allocIdHash, private_key)
         return new Promise(async function (resolve, reject) { // eslint-disable-line
             const blobber_url = blobber + Endpoints.FILE_META_ENDPOINT + allocation_id;
-            const response = await utils.postReqToBlobber(blobber_url, {}, { path_hash: path_hash, auth_token: atob(auth_ticket) }, client_id,public_key);
+            const response = await utils.postReqToBlobber(blobber_url, {}, { path_hash: path_hash, auth_token: atob(auth_ticket) }, client_id,public_key, signature);
             if (response.status === 200) {
                 const res = {
                     ...response.data,
@@ -849,7 +850,7 @@ module.exports = {
                 metadata = await this.getFileMetaDataFromPath(allocation_id, path, ae.id, ae.secretKey, ae.public_key)
             } else if (auth_ticket.length > 0) {
                 const at = utils.parseAuthTicket(auth_ticket)
-                metadata = await this.getFileMetaDataFromPathHash(at.allocation_id, lookuphash, auth_ticket, ae.id, ae.public_key)
+                metadata = await this.getFileMetaDataFromPathHash(at.allocation_id, lookuphash, auth_ticket, ae.id, ae.secretKey, ae.public_key)
             }
         }
         const { name, type, lookup_hash, actual_file_hash, mimetype, size, encrypted_key } = metadata
@@ -1018,31 +1019,41 @@ module.exports = {
         return response
     },
 
-    createFree2GbAllocation: async function (id_token, phone_num, encryption_key, username, client_id, client_key){
+    createFree2GbAllocation: async function (id_token, phone_num, encryption_key, username, email, referrer, client_id, client_key){
         const url = zeroBoxUrl + Endpoints.ZEROBOX_SERVER_FREE_ALLOCATION;
         const data = new FormData();
         data.append('id_token', id_token);
         data.append('phone_num', phone_num);
         data.append('encryption_key',encryption_key);
         data.append('username', username);
+        data.append('email', email);
+        data.append('referrer', referrer);
         const response= await utils.postMethodTo0box(url, data,client_id, client_key, "", id_token);
         return response;
     },
 
-    deleteExistAllocation: async function (id_token, phone_num,client_id,client_key){
+    deleteExistAllocation: async function (id_token, phone_num, client_id, client_key, alloc_id){
         const url = zeroBoxUrl + Endpoints.ZEROBOX_SERVER_DELETE_EXIST_ALLOCATION;
         const data = new FormData();
         data.append('id_token', id_token);
         data.append('phone_num', phone_num);
-        const reponse = await utils.deleteMethodTo0box(url,data, client_id,client_key,"", id_token);
+        data.append('alloc_id', alloc_id);
+        const reponse = await utils.deleteMethodTo0box(url, data, client_id, client_key, "", id_token);
         return reponse;
     },
 
-    postShareInfo: async function (authTicket, activeWallet, message, fromInfo, receiver_id) {
+    getShareInfo: async function (activeWallet) {
+        const url = zeroBoxUrl + Endpoints.ZEROBOX_SERVER_SHARE_INFO_ENDPOINT;
+        const clientSignature = this.getSign(activeWallet.id, activeWallet.secretKey);
+        const response = await utils.getShareInfo(url, clientSignature, activeWallet.id, activeWallet.client_key);
+        return response
+    },
+
+    postShareInfo: async function (authTickets, activeWallet, message, fromInfo, receiver_id) {
         const url = zeroBoxUrl + Endpoints.ZEROBOX_SERVER_SHARE_INFO_ENDPOINT;
         const client_signature = this.getSign(activeWallet.clientId, activeWallet.secretKey);
         const data = new FormData();
-        data.append('auth_tickets', JSON.stringify(authTicket));
+        data.append('auth_tickets', JSON.stringify(authTickets));
         data.append('message', message);
         data.append('from_info', fromInfo);
         data.append('reciever_client_id', receiver_id);
@@ -1055,9 +1066,9 @@ module.exports = {
         const url = zeroBoxUrl + Endpoints.ZEROBOX_SERVER_SHARE_INFO_ENDPOINT;
         const signature = this.getSign(activeWallet.id, activeWallet.secretKey);
         const data = new FormData();
-        data.append('client_signature', sig);
+        data.append('client_signature', signature);
         data.append('auth_ticket', authTicket)
-        const response = await utils.deleteMethodTo0box(url, data, activeWallet.id, activeWallet.public_key, signature);
+        const response = await utils.deleteMethodTo0box(url, data, activeWallet.id, activeWallet.public_key, signature, "");
         return response
     },
 
@@ -1069,16 +1080,9 @@ module.exports = {
         return sig.serializeToHexStr();
     },
 
-    getShareInfo: async function (activeWallet) {
-        const url = zeroBoxUrl + Endpoints.ZEROBOX_SERVER_SHARE_INFO_ENDPOINT;
-        const clientSignature = this.getSign(activeWallet.id, activeWallet.secretKey);
-        const response = await utils.getShareInfo(url, clientSignature, activeWallet.id, activeWallet.client_key);
-        return response
-    },
-
     getReferralsInfo: async function (activeWallet) { // eslint-disable-line
         const url = zeroBoxUrl + Endpoints.ZEROBOX_SERVER_REFERRALS_INFO_ENDPOINT;
-        // const clientSignature = this.getSign(activeWallet.id, activeWallet.secretKey);
+        const clientSignature = this.getSign(activeWallet.id, activeWallet.secretKey);
         const response = await utils.getReferrals(url);
         return response
     },

@@ -213,7 +213,7 @@ module.exports = {
         })
     },
 
-    postMethodTo0box: function (url, data, clientId, public_key,client_signature, id_token) {
+    postMethodTo0box: function (url, data, clientId, public_key, client_signature, id_token) {
 
         const headers = {
             'X-App-ID-TOKEN': id_token,
