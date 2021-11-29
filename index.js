@@ -713,10 +713,13 @@ module.exports = {
     getAllBlobbers: function getAllBlobbers() {
         return utils.getConsensusedInformationFromSharders(sharders, Endpoints.SC_BLOBBER_STATS, {})
             .then((res) => {
-                const response = res.Nodes.filter((value) =>
-                    new Date().getTime() - new Date(value.last_health_check * 1000).getTime() < 3600000
-                );
-                return response;
+                if (res.Nodes.length > 0) {
+                    return res.Nodes.filter((value) =>
+                      new Date().getTime() - new Date(value.last_health_check * 1000).getTime() < 3600000
+                    );
+                } else {
+                    throw "There are no nodes in blobbers array!"
+                }
             });
     },
 
@@ -729,14 +732,23 @@ module.exports = {
 
             return blobber;
         })
-        const  detailedBlobbersCallingEachApi = await Promise.all(detailedBlobbers.map(async (dBl)=>{
-            const blobData = await fetch(dBl.convertedUrl)
-            const blobJson = await blobData.json()
-            const blobStakeStats = await this.getStakePoolStat(dBl.id)
-            blobJson.free_from_blobber_stake_stats = await blobStakeStats.free
-            return {...blobJson,...dBl};
-       }))
-        return detailedBlobbersCallingEachApi ;
+
+        return await Promise.allSettled(detailedBlobbers.map(async (dBl) => {
+            return await fetch(dBl.convertedUrl)
+              .then(data => data.json())
+              .then(async blobJson => {
+                  const blobStakeStats = await this.getStakePoolStat(dBl.id)
+                  blobJson.free_from_blobber_stake_stats = await blobStakeStats.free
+                  return { ...blobJson, ...dBl };
+              })
+              .catch(error => {
+                  throw {
+                      url: dBl.url,
+                      convertedUrl: dBl.convertedUrl,
+                      ...error
+                  }
+              })
+        })) ;
       },
 
     getAllocationSharedFilesFromPath: async function (allocation_id, lookup_hash, client_id, auth_token = "") {
