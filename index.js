@@ -712,15 +712,15 @@ module.exports = {
 
     getAllBlobbers: function getAllBlobbers() {
         return utils.getConsensusedInformationFromSharders(sharders, Endpoints.SC_BLOBBER_STATS, {})
-            .then((res) => {
-                if (res.Nodes.length > 0) {
-                    return res.Nodes.filter((value) =>
-                      new Date().getTime() - new Date(value.last_health_check * 1000).getTime() < 3600000
-                    );
-                } else {
-                    throw "There are no nodes in blobbers array!"
-                }
-            });
+          .then((res) => {
+              if (!res.Nodes)
+                  throw "Array of Nodes (blobbers) array is NULL"
+              if (!res.Nodes.length)
+                  throw "There are no blobbers in Nodes array"
+              return res.Nodes.filter((value) =>
+                new Date().getTime() - new Date(value.last_health_check * 1000).getTime() < 3600000
+              )
+          });
     },
 
     getAllBlobbersDetails: async function getAllBlobbersDetails() {
