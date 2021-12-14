@@ -24,6 +24,7 @@ const FormData = require('form-data')
 //local import
 const utils = require('./utils');
 const models = require('./models');
+const wasm = require('./wasm');
 "use strict";
 
 var miners, proxyServerUrl, zeroBoxUrl, sharders, clusterName, version;
@@ -32,7 +33,7 @@ var maxChallengeCompletionTime;
 var readPrice, writePrice; // eslint-disable-line
 var preferredBlobbers; // eslint-disable-line
 var tokenLock;
-let bls;
+let bls, goWasm;
 
 // const StorageSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7";
 // const FaucetSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3";
@@ -76,7 +77,7 @@ const Endpoints = {
     //STAKING
     GET_STORAGESC_POOL_STATS: "v1/screst/" + StorageSmartContractAddress + "/getUserStakePoolStat",
     GET_MINERSC_POOL_STATS: "v1/screst/" + MinerSmartContractAddress + "/getUserPools",
-    GET_STAKE_POOL_STAT : "v1/screst/" + StorageSmartContractAddress+"/getStakePoolStat",
+    GET_STAKE_POOL_STAT: "v1/screst/" + StorageSmartContractAddress + "/getStakePoolStat",
 
     //BLOBBER
     ALLOCATION_FILE_LIST: "/v1/file/list/",
@@ -119,6 +120,36 @@ const TransactionType = {
     SMART_CONTRACT: 1000 // A smart contract transaction type
 }
 
+const configJson = {
+  "miners": [
+      "http://localhost:7071/",
+      "http://localhost:7072/",
+      "http://localhost:7073/"
+  ],
+  "sharders": [
+      "http://localhost:7171/"
+  ],
+  "preferredBlobbers": [
+      "http://localhost:7051/",
+      "http://localhost:7052/",
+      "http://localhost:7053/",
+      "http://localhost:7054/"
+  ],
+  "readPrice": {
+      "min": 0,
+      "max": 0
+  },
+  "writePrice": {
+      "min": 0,
+      "max": 0
+  },
+  "tokenLock": 0,
+  "proxyServerUrl": "http://localhost:9082",
+  "zeroBoxUrl": "http://one.0box.io:9081",
+  "transaction_timeout": 15,
+  "clusterName": "local"
+};
+
 module.exports = {
 
     BlockInfoOptions: {
@@ -132,50 +163,35 @@ module.exports = {
         MONETIZE: "Monetize"
     },
 
-    /////////////SDK Stuff below //////////////
+    ///////////// SDK Initialization //////////////
     init: async function init(configObject, bls_wasm) {
-        var config;
-        if (typeof configObject != "undefined" && configObject.hasOwnProperty('miners') &&
-            configObject.hasOwnProperty('sharders')
-            && configObject.hasOwnProperty('clusterName')
-            && configObject.hasOwnProperty('proxyServerUrl')) {
-            config = configObject;
-        }
-        else {
-            const jsonContent = {
-                "miners": [
-                    "http://localhost:7071/",
-                    "http://localhost:7072/",
-                    "http://localhost:7073/"
-                ],
-                "sharders": [
-                    "http://localhost:7171/"
-                ],
-                "preferredBlobbers": [
-                    "http://localhost:7051/",
-                    "http://localhost:7052/",
-                    "http://localhost:7053/",
-                    "http://localhost:7054/"
-                ],
-                "readPrice": {
-                    "min": 0,
-                    "max": 0
-                },
-                "writePrice": {
-                    "min": 0,
-                    "max": 0
-                },
-                "tokenLock": 0,
-                "proxyServerUrl": "http://localhost:9082",
-                "zeroBoxUrl": "http://one.0box.io:9081",
-                "transaction_timeout": 15,
-                "clusterName": "local"
-            };
-            config = jsonContent;
+        const hasConfig = typeof configObject != "undefined"
+        const hasMiners = configObject.hasOwnProperty('miners')
+        const hasSharders = configObject.hasOwnProperty('sharders')
+        const hasCluster = configObject.hasOwnProperty('clusterName')
+        const hasProxyUrl = configObject.hasOwnProperty('proxyServerUrl')
+
+        let config;
+
+        if (hasConfig && hasMiners && hasSharders && hasCluster && hasProxyUrl) {
+          config = configObject;
+        } else {
+          config = configJson;
         }
 
         bls = bls_wasm;
         await bls.init(bls.BN254)
+
+        goWasm = await wasm.create();
+
+        await goWasm.sdk.init(
+          config.chain_id,
+          config.block_worker,
+          config.signature_scheme,
+          config.min_confirmation,
+          config.min_submit,
+          config.confirmation_chain_length,
+        );
 
         miners = config.miners;
         sharders = config.sharders;
@@ -194,6 +210,9 @@ module.exports = {
         version = "0.8.0";
     },
 
+    setWallet: async function (clientID, sk, pk) {
+        await goWasm.setWallet(bls, clientID, sk, pk)
+    },
 
     getSdkMetadata: () => {
         return "version: " + version + " cluster: " + clusterName;
@@ -344,7 +363,7 @@ module.exports = {
 
         //creating read pool
         await this.createReadPool(wallet)
-        // console.log(wallet,"wallet")
+
         return wallet;
     },
 
@@ -491,7 +510,7 @@ module.exports = {
     },
 
     readPoolInfo: function readPoolInfo(id) {
-        const readPoolInfoRes =utils.getConsensusedInformationFromSharders(
+        const readPoolInfoRes = utils.getConsensusedInformationFromSharders(
             sharders,
             Endpoints.SC_REST_READPOOL_STATS,
             { client_id: id }
@@ -562,14 +581,14 @@ module.exports = {
                             let active = activeList[url];
                             activeUrls = res.data && res.data.Nodes && res.data.Nodes.filter((value) => {
                                 const url = value.simple_miner.host + ":" + value.simple_miner.port;
-                                let check=false;
+                                let check = false;
                                 for (let val of active) {
-                                    if (val.indexOf(url.slice(0, -6))  !== -1){
-                                        check=true;
+                                    if (val.indexOf(url.slice(0, -6)) !== -1) {
+                                        check = true;
                                         return true
                                     }
                                 }
-                                if(check) return true;
+                                if (check) return true;
                                 return false;
                             })
                         } else {
@@ -622,15 +641,15 @@ module.exports = {
         });
     },
 
-    getStakePoolStat:(blobber_id)=>{
+    getStakePoolStat: (blobber_id) => {
         return new Promise(async function (resolve) { // eslint-disable-line
             let stakePoolStat = await utils.getConsensusedInformationFromSharders(
-              sharders,Endpoints.GET_STAKE_POOL_STAT,{blobber_id}
+                sharders, Endpoints.GET_STAKE_POOL_STAT, { blobber_id }
             )
-              .then(res => {
-                  return res
-              })
-              .catch(() => null)
+                .then(res => {
+                    return res
+                })
+                .catch(() => null)
 
             if (stakePoolStat === null) {
                 stakePoolStat = []
@@ -661,9 +680,10 @@ module.exports = {
                 allocation_id: allocation
             }
         }
-        const readPoolLockRes =await this.executeSmartContract(ae, undefined, JSON.stringify(payload), tokens)
+        const readPoolLockRes = await this.executeSmartContract(ae, undefined, JSON.stringify(payload), tokens)
 
-        if(!readPoolLockRes.transaction_output){
+        if (!readPoolLockRes.transaction_output) {
+
             this.createReadPool(JSON.parse(localStorage.getItem("wallet_info")))
         }
         return readPoolLockRes;
@@ -712,44 +732,44 @@ module.exports = {
 
     getAllBlobbers: function getAllBlobbers() {
         return utils.getConsensusedInformationFromSharders(sharders, Endpoints.SC_BLOBBER_STATS, {})
-          .then((res) => {
-              if (!res.Nodes)
-                  throw "Array of Nodes (blobbers) array is NULL"
-              if (!res.Nodes.length)
-                  throw "There are no blobbers in Nodes array"
-              return res.Nodes.filter((value) =>
-                new Date().getTime() - new Date(value.last_health_check * 1000).getTime() < 3600000
-              )
-          });
+            .then((res) => {
+                if (!res.Nodes)
+                    throw "Array of Nodes (blobbers) array is NULL"
+                if (!res.Nodes.length)
+                    throw "There are no blobbers in Nodes array"
+                return res.Nodes.filter((value) =>
+                    new Date().getTime() - new Date(value.last_health_check * 1000).getTime() < 3600000
+                )
+            });
     },
 
     getAllBlobbersDetails: async function getAllBlobbersDetails() {
         const currentBlobbers = await this.getAllBlobbers();
-        const detailedBlobbers = currentBlobbers.map((blobber)=>{
+        const detailedBlobbers = currentBlobbers.map((blobber) => {
             const blobberUrl = new URL(blobber.url)
-            blobber.convertedUrl = 'https://'+blobberUrl.hostname +'/blobber'+ blobberUrl.port.slice(-2)+'/_statsJSON'
-            blobber.convertedURL = 'https://'+blobberUrl.hostname +'/blobber'+ blobberUrl.port.slice(-2)+'/_stats'
+            blobber.convertedUrl = 'https://' + blobberUrl.hostname + '/blobber' + blobberUrl.port.slice(-2) + '/_statsJSON'
+            blobber.convertedURL = 'https://' + blobberUrl.hostname + '/blobber' + blobberUrl.port.slice(-2) + '/_stats'
 
             return blobber;
         })
 
         return await Promise.allSettled(detailedBlobbers.map(async (dBl) => {
             return await fetch(dBl.convertedUrl)
-              .then(data => data.json())
-              .then(async blobJson => {
-                  const blobStakeStats = await this.getStakePoolStat(dBl.id)
-                  blobJson.free_from_blobber_stake_stats = await blobStakeStats.free
-                  return { ...blobJson, ...dBl };
-              })
-              .catch(error => {
-                  throw {
-                      url: dBl.url,
-                      convertedUrl: dBl.convertedUrl,
-                      ...error
-                  }
-              })
-        })) ;
-      },
+                .then(data => data.json())
+                .then(async blobJson => {
+                    const blobStakeStats = await this.getStakePoolStat(dBl.id)
+                    blobJson.free_from_blobber_stake_stats = await blobStakeStats.free
+                    return { ...blobJson, ...dBl };
+                })
+                .catch(error => {
+                    throw {
+                        url: dBl.url,
+                        convertedUrl: dBl.convertedUrl,
+                        ...error
+                    }
+                })
+        }));
+    },
 
     getAllocationSharedFilesFromPath: async function (allocation_id, lookup_hash, client_id, auth_token = "") {
         var blobber_url;
@@ -785,7 +805,7 @@ module.exports = {
     },
 
     getFileMetaDataFromPath: async function (allocation_id, path, client_id, private_key, public_key) {
-        const completeAllocationInfo = await this.allocationInfo(allocation_id);        
+        const completeAllocationInfo = await this.allocationInfo(allocation_id);
         const allocIdHash = sha3.sha3_256(allocation_id)
         const signature = this.getSign(allocIdHash, private_key)
         const blobber = completeAllocationInfo.blobbers[0].url;
@@ -804,7 +824,7 @@ module.exports = {
         });
     },
 
-    getFileStatsFromPath: async function (allocation_id, filePath, client_id, private_key, public_key) {        
+    getFileStatsFromPath: async function (allocation_id, filePath, client_id, private_key, public_key) {
         const completeAllocationInfo = await this.allocationInfo(allocation_id);
         const allocIdHash = sha3.sha3_256(allocation_id)
         const signature = this.getSign(allocIdHash, private_key)
@@ -821,9 +841,9 @@ module.exports = {
                 await utils.postReqToBlobber(blobber_url, pathFormData, {}, client_id, public_key, signature)
                     .then((response) => {
                         if (!response.data) { // TODO: properly handle errors on POST reqs
-                          console.error(response)
+                            console.error(response)
                         } else {
-                          allBlobbersResponse.push({ ...response.data, url: blobber.url })
+                            allBlobbersResponse.push({ ...response.data, url: blobber.url })
                         }
                     })
             }
@@ -843,7 +863,7 @@ module.exports = {
         const signature = this.getSign(allocIdHash, private_key)
         return new Promise(async function (resolve, reject) { // eslint-disable-line
             const blobber_url = blobber + Endpoints.FILE_META_ENDPOINT + allocation_id;
-            const response = await utils.postReqToBlobber(blobber_url, {}, { path_hash: path_hash, auth_token: atob(auth_ticket) }, client_id,public_key, signature);
+            const response = await utils.postReqToBlobber(blobber_url, {}, { path_hash: path_hash, auth_token: atob(auth_ticket) }, client_id, public_key, signature);
             if (response.status === 200) {
                 const res = {
                     ...response.data,
@@ -885,7 +905,7 @@ module.exports = {
         return submitResponse
     },
 
-    updateMetaCommitToBlobbers: async function (transaction_hash, allocation, lookup_hash, client_id, auth_ticket = "", public_key="") {
+    updateMetaCommitToBlobbers: async function (transaction_hash, allocation, lookup_hash, client_id, auth_ticket = "", public_key = "") {
         const completeAllocationInfo = await this.allocationInfo(allocation);
         const blobber_list = completeAllocationInfo.blobbers.map(blobber => {
             return blobber.url
@@ -959,14 +979,9 @@ module.exports = {
         return response
     },
 
-    deleteObject: async function (allocation_id, path, client_json) {
-        const url = proxyServerUrl + Endpoints.PROXY_SERVER_DELETE_ENDPOINT
-        const formData = new FormData();
-        formData.append('allocation', allocation_id);
-        formData.append('remote_path', path);
-        formData.append('client_json', JSON.stringify(client_json));
-        const response = await utils.delReq(url, formData);
-        return response
+    deleteObject: async function (allocation_id, path, shouldCommitMeta) {
+        const resp = await goWasm.sdk.delete(allocation_id, path, shouldCommitMeta);
+        return resp;
     },
 
     copyObject: async function (allocation_id, path, dest, client_json) {
@@ -1001,6 +1016,7 @@ module.exports = {
         }
         const response = await utils.getReq(url, params);
         return response
+
     },
 
     moveObject: async function (allocation_id, path, dest, client_json) {
@@ -1027,24 +1043,24 @@ module.exports = {
         data.append('id_token', tokenId);
         data.append('phone_num', phone);
         data.append('app_id', "0x00");
-        const response = await utils.postMethodTo0box(url, data, activeWallet.id, activeWallet.public_key,"", tokenId);
+        const response = await utils.postMethodTo0box(url, data, activeWallet.id, activeWallet.public_key, "", tokenId);
         return response
     },
 
-    createFree2GbAllocation: async function (id_token, phone_num, encryption_key, username, email, referrer, client_id, client_key){
+    createFree2GbAllocation: async function (id_token, phone_num, encryption_key, username, email, referrer, client_id, client_key) {
         const url = zeroBoxUrl + Endpoints.ZEROBOX_SERVER_FREE_ALLOCATION;
         const data = new FormData();
         data.append('id_token', id_token);
         data.append('phone_num', phone_num);
-        data.append('encryption_key',encryption_key);
+        data.append('encryption_key', encryption_key);
         data.append('username', username);
         data.append('email', email);
         data.append('referrer', referrer);
-        const response= await utils.postMethodTo0box(url, data,client_id, client_key, "", id_token);
+        const response = await utils.postMethodTo0box(url, data, client_id, client_key, "", id_token);
         return response;
     },
 
-    deleteExistAllocation: async function (id_token, phone_num, client_id, client_key, alloc_id){
+    deleteExistAllocation: async function (id_token, phone_num, client_id, client_key, alloc_id) {
         const url = zeroBoxUrl + Endpoints.ZEROBOX_SERVER_DELETE_EXIST_ALLOCATION;
         const data = new FormData();
         data.append('id_token', id_token);
@@ -1094,7 +1110,6 @@ module.exports = {
 
     getReferralsInfo: async function (activeWallet) { // eslint-disable-line
         const url = zeroBoxUrl + Endpoints.ZEROBOX_SERVER_REFERRALS_INFO_ENDPOINT;
-        const clientSignature = this.getSign(activeWallet.id, activeWallet.secretKey);
         const response = await utils.getReferrals(url);
         return response
     },
@@ -1168,7 +1183,7 @@ function createWallet(mnemonic) {
                     myaccount.entity.mnemonic = mnemonic;
                 }
                 var ae = new models.Wallet(myaccount.entity);
-                localStorage.setItem("wallet_info",JSON.stringify(ae))
+                localStorage.setItem("wallet_info", JSON.stringify(ae))
                 resolve(ae);
             })
             .catch((error) => {
@@ -1184,14 +1199,17 @@ function createWalletKeys(mnemonic) {
     const blsSecret = new bls.SecretKey();
     bls.setRandFunc(buffer)
     blsSecret.setLittleEndian(buffer)
+
     const public_key = blsSecret.getPublicKey().serializeToHexStr();
     const private_key = blsSecret.serializeToHexStr();
     const client_id = sha3.sha3_256(utils.hexStringToByte(public_key));
 
+    goWasm.jsProxy.secretKey = blsSecret;
+
     return {
         client_id,
         public_key,
-        private_key
+        private_key,
     }
 
 }
