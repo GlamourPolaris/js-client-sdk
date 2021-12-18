@@ -81,6 +81,9 @@ const sleep = () => new Promise(res => {
 const maxTime = 10 * 1000;
 
 async function setWallet(bls, clientID, sk, pk) {
+  if (!sk)
+    throw new Error('Secret key is undefined, on js-client-sdk setWallet fn')
+
   bridge.jsProxy.secretKey = bls.deserializeHexStrToSecretKey(sk);
   // use proxy.sdk to detect if sdk is ready
   await bridge.__proxy__.sdk.setWallet(clientID, pk)
