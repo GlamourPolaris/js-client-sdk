@@ -61,6 +61,7 @@ const Endpoints = {
     GET_BLOCK_INFO: "v1/block/get",
     CHECK_TRANSACTION_STATUS: "v1/transaction/get/confirmation",
     GET_BALANCE: "v1/client/get/balance",
+    GET_CLIENT: "v1/client/get",
     GET_SCSTATE: "v1/scstate/get",
 
     // SC REST
@@ -310,6 +311,19 @@ module.exports = {
         // return getInformationFromRandomSharder(Endpoints.GET_BALANCE, { client_id: client_id });
     },
 
+    getClient: (mnemonic) => {
+        return new Promise(function (resolve, reject) {
+            const { client_id} = createWalletKeys(mnemonic)
+            utils.doGetReqToRandomMiner(miners, Endpoints.GET_CLIENT, { id: client_id })
+                .then((res) => {
+                    resolve(res);
+                })
+                .catch((error) => {  
+                        reject(error);
+                })
+        });
+    },
+    
     getLockedTokens: (client_id) => {
         return new Promise(function (resolve) {
             utils.getConsensusedInformationFromSharders(sharders, Endpoints.GET_LOCKED_TOKENS, { client_id: client_id })

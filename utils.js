@@ -318,7 +318,16 @@ module.exports = {
         return axios({
             method: 'get',
             url: url
-        })
+    })},
+
+    getReqFromMiner: async function getReqFromMiner(url, params) {
+        try{
+            return await axios.get(url, {
+                params: params,
+            })
+        }catch(err){
+            return err;
+        }
     },
 
     parseJson: function (jsonString) {
@@ -400,5 +409,29 @@ module.exports = {
                     reject({ error: err[0].code });
                 });
         });
-    }
-}
+    },
+
+    doGetReqToRandomMiner: async function (miners,url,getData){
+        let self = this;
+            return new Promise(async (resolve,reject)=>{
+                try{
+
+                    let urls = miners.map(miner => miner + url);
+                    let shuffledMinerUrl = self.shuffleArray([...urls]);
+
+                    for(let i =0 ; i < shuffledMinerUrl.length; i++){
+                        const res = await self.getReqFromMiner(shuffledMinerUrl[i],getData)
+                        if(res.status === 200){
+                            return resolve(res);
+                        }
+                    }  
+                    return reject({error:"error while getting mnemonic"})
+                }catch(err){
+                    reject(err)
+                }
+            })
+    },
+
+};
+
+
