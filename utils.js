@@ -54,6 +54,7 @@ const parseConsensusMessage = function (finalResponse, parser) {
     return data;
 }
 
+
 module.exports = {
     byteToHexString: function byteToHexString(uint8arr) {
         if (!uint8arr) {
@@ -411,27 +412,33 @@ module.exports = {
         });
     },
 
-    doGetReqToRandomMiner: async function (miners,url,getData){
+    readBytes: (file) => new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            resolve(new Uint8Array(reader.result));
+        };
+        reader.readAsArrayBuffer(file);
+    }),
+
+    doGetReqToRandomMiner: async function (miners, url, getData) {
         let self = this;
-            return new Promise(async (resolve,reject)=>{
-                try{
 
-                    let urls = miners.map(miner => miner + url);
-                    let shuffledMinerUrl = self.shuffleArray([...urls]);
+        return new Promise(async (resolve, reject) => {
+            try {
+                let urls = miners.map(miner => miner + url);
+                let shuffledMinerUrl = self.shuffleArray([...urls]);
 
-                    for(let i =0 ; i < shuffledMinerUrl.length; i++){
-                        const res = await self.getReqFromMiner(shuffledMinerUrl[i],getData)
-                        if(res.status === 200){
-                            return resolve(res);
-                        }
-                    }  
-                    return reject({error:"error while getting mnemonic"})
-                }catch(err){
-                    reject(err)
+                for(let i =0 ; i < shuffledMinerUrl.length; i++){
+                    const res = await self.getReqFromMiner(shuffledMinerUrl[i],getData)
+                    if(res.status === 200){
+                        return resolve(res);
+                    }
                 }
-            })
+                return reject({error:"error while getting mnemonic"})
+            } catch(err) {
+                reject(err)
+            }
+        })
     },
 
 };
-
-

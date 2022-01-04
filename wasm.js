@@ -40,6 +40,11 @@ async function blsSign(hash) {
   return sig.serializeToHexStr();
 }
 
+async function createObjectURL(buf, mimeType) {
+  var blob = new Blob([buf], { type: mimeType });
+  return URL.createObjectURL(blob);
+}
+
 
 // Initialize __zcn_wasm__
 if (!g.__zcn_wasm__) {
@@ -47,6 +52,7 @@ if (!g.__zcn_wasm__) {
     jsProxy: {
       secretKey: null,
       sign: blsSign,
+      createObjectURL,
     },
     sdk: {},
   };

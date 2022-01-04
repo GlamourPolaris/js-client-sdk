@@ -318,12 +318,12 @@ module.exports = {
                 .then((res) => {
                     resolve(res);
                 })
-                .catch((error) => {  
+                .catch((error) => {
                         reject(error);
                 })
         });
     },
-    
+
     getLockedTokens: (client_id) => {
         return new Promise(function (resolve) {
             utils.getConsensusedInformationFromSharders(sharders, Endpoints.GET_LOCKED_TOKENS, { client_id: client_id })
@@ -951,28 +951,18 @@ module.exports = {
         })
     },
 
-    uploadObject: async function (file, allocation_id, path, encrypt = false, client_json, option = null) {
-        const url = proxyServerUrl + Endpoints.PROXY_SERVER_UPLOAD_ENDPOINT
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('allocation', allocation_id);
-        formData.append('remote_path', path);
-        formData.append('client_json', JSON.stringify(client_json))
-        formData.append('encrypt', encrypt)
-        const response = await utils.postReq(url, formData, option);
-        return response
+
+    uploadObject: async function (file, allocation_id, path, encrypt = false, shouldCommitMeta = false) {
+       // Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, commit bool, attrWhoPaysForReads string, isLiveUpload, isSyncUpload bool, chunkSize int, isUpdate, isRepair bool) (*transaction.Transaction, error) {
+        const fileBytes = await utils.readBytes(file);
+        const resp = await goWasm.sdk.upload(allocation_id, path, fileBytes, null, encrypt, shouldCommitMeta, "", false, false, 0, false, false);
+        return resp;
     },
 
-    downloadObject: async function (allocation_id, path, client_json) {
-        const url = proxyServerUrl + Endpoints.PROXY_SERVER_DOWNLOAD_ENDPOINT
-        const params = {
-            allocation: allocation_id,
-            remote_path: path,
-            client_json: client_json
-        }
-        const response = await utils.getDownloadReq(url, params);
-        window.location.href = response.request.responseURL
-        return response;
+    downloadObject: async function (allocation_id, path, shouldCommitMeta) {
+       // allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly, rxPay, autoCommit bool
+        const resp = await goWasm.sdk.download(allocation_id, path, "", "", false, false, shouldCommitMeta);
+        return resp;
     },
 
     downloadSharedObject: async function (allocation_id, auth_ticket, lookup_hash, file_name, client_json) {
@@ -988,15 +978,9 @@ module.exports = {
         window.location.href = response.request.responseURL
     },
 
-    renameObject: async function (allocation_id, path, new_name, client_json) {
-        const url = proxyServerUrl + Endpoints.PROXY_SERVER_RENAME_ENDPOINT
-        const formData = new FormData();
-        formData.append('allocation', allocation_id);
-        formData.append('remote_path', path);
-        formData.append('new_name', new_name);
-        formData.append('client_json', JSON.stringify(client_json));
-        const response = await utils.putReq(url, formData);
-        return response
+    renameObject: async function (allocation_id, path, new_name, shouldCommitMeta) {
+        const resp = await goWasm.sdk.rename(allocation_id, path, new_name, shouldCommitMeta);
+        return resp;
     },
 
     deleteObject: async function (allocation_id, path, shouldCommitMeta) {
@@ -1004,50 +988,24 @@ module.exports = {
         return resp;
     },
 
-    copyObject: async function (allocation_id, path, dest, client_json) {
-        const url = proxyServerUrl + Endpoints.PROXY_SERVER_COPY_ENDPOINT
-        const formData = new FormData();
-        formData.append('allocation', allocation_id);
-        formData.append('remote_path', path);
-        formData.append('dest_path', dest);
-        formData.append('client_json', JSON.stringify(client_json));
-        const response = await utils.putReq(url, formData);
-        return response
+    copyObject: async function (allocation_id, path, dest, shouldCommitMeta) {
+        const resp = await goWasm.sdk.copy(allocation_id, path, dest, shouldCommitMeta);
+        return resp;
     },
 
-    shareObject: async function (allocation_id, path, client_id, public_encryption_key, expiration, client_json) {
-        const url = proxyServerUrl + Endpoints.PROXY_SERVER_SHARE_ENDPOINT
-        const params = {
-            allocation: allocation_id,
-            remote_path: path,
-            referee_client_id: client_id,
-            encryption_public_key: public_encryption_key,
-            expiration: expiration,
-            client_json: client_json
-        }
-        const response = await utils.getReq(url, params);
-        return response
+    shareObject: async function (allocation_id, path, client_id, public_encryption_key, expiration) {
+        const resp = await goWasm.sdk.share(allocation_id, path, client_id, public_encryption_key, expiration, false, 0);
+        return resp;
     },
 
     encryptPublicKey: async function (client_json) {
-        const url = proxyServerUrl + Endpoints.PROXY_SERVER_ENCRYPT_PUBLIC_KEY_ENDPOINT
-        const params = {
-            client_json: client_json
-        }
-        const response = await utils.getReq(url, params);
-        return response
-
+        const resp = await goWasm.sdk.getEncryptedPublicKey(client_json.mnemonic);
+        return resp;
     },
 
-    moveObject: async function (allocation_id, path, dest, client_json) {
-        const url = proxyServerUrl + Endpoints.PROXY_SERVER_MOVE_ENDPOINT
-        const formData = new FormData();
-        formData.append('allocation', allocation_id);
-        formData.append('remote_path', path);
-        formData.append('dest_path', dest);
-        formData.append('client_json', JSON.stringify(client_json));
-        const response = await utils.putReq(url, formData);
-        return response
+    moveObject: async function (allocation_id, path, dest, shouldCommitMeta) {
+        const resp = await goWasm.sdk.move(allocation_id, path, dest, shouldCommitMeta);
+        return resp;
     },
 
     recoverWalletFromCloud: async function (AppIDToken, AppPhoneNumber) {
