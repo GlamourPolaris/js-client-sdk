@@ -766,9 +766,8 @@ module.exports = {
     getAllBlobbersDetails: async function getAllBlobbersDetails() {
         const currentBlobbers = await this.getAllBlobbers();
         const detailedBlobbers = currentBlobbers.map((blobber) => {
-            const blobberUrl = new URL(blobber.url)
-            blobber.convertedUrl = 'https://' + blobberUrl.hostname + '/blobber' + blobberUrl.port.slice(-2) + '/_statsJSON'
-            blobber.convertedURL = 'https://' + blobberUrl.hostname + '/blobber' + blobberUrl.port.slice(-2) + '/_stats'
+            blobber.convertedUrl = `${blobber.url}/_statsJSON`
+            blobber.convertedURL = `${blobber.url}/_stats`
 
             return blobber;
         })
