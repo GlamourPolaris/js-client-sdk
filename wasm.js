@@ -21,7 +21,7 @@ const utils = require('./utils');
 const g = global || window || self;
 
 async function blsSign(hash) {
-  if (!bridge.jsProxy?.secretKey) {
+  if (!bridge.jsProxy && !bridge.jsProxy.secretKey) {
     const errMsg = 'err: bls.secretKey is not initialized';
     console.error(errMsg);
     throw new Error(errMsg);
@@ -149,7 +149,7 @@ async function createWasm() {
         resp = await Promise.race([resp]);
       }
 
-      if (resp?.error) {
+      if (resp && resp.error) {
         rej(new Error(resp.error));
       } else {
         res(resp);
