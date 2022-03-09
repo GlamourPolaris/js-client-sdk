@@ -104,6 +104,14 @@ const jsProxy = new Proxy({}, {
 })
 
 async function loadWasm(go) {
+  //If instantiateStreaming doesn't exists, create it on top of instantiate
+  if (WebAssembly && !WebAssembly.instantiateStreaming) {
+    WebAssembly.instantiateStreaming = async (resp, importObject) => {
+      const source = await (await resp).arrayBuffer();
+      return await WebAssembly.instantiate(source, importObject);
+    };
+  }
+
   const result = await WebAssembly.instantiateStreaming(
       await fetch('/zcn.wasm'), go.importObject);
 
