@@ -45,6 +45,20 @@ async function createObjectURL(buf, mimeType) {
   return URL.createObjectURL(blob);
 }
 
+/**
+ * Sleep is used when awaiting for Go Wasm to initialize or waiting for remote response inside sdk.
+ * It uses the lowest possible sane delay time (via requestAnimationFrame).
+ * However, if the window is not focused, requestAnimationFrame never returns.
+ * A timeout will ensure to be called after 50 ms, regardless of whether or not
+ * the tab is in focus.
+ *
+ * @returns {Promise} an always-resolving promise when a tick has been
+ *     completed.
+ */
+ const sleep = (ms = 1000) => new Promise(res => {
+  requestAnimationFrame(res);
+  setTimeout(res, ms);
+});
 
 // Initialize __zcn_wasm__
 if (!g.__zcn_wasm__) {
@@ -53,6 +67,7 @@ if (!g.__zcn_wasm__) {
       secretKey: null,
       sign: blsSign,
       createObjectURL,
+      sleep,
     },
     sdk: {},
   };
@@ -63,20 +78,7 @@ if (!g.__zcn_wasm__) {
  */
 const bridge = g.__zcn_wasm__;
 
-/**
- * Sleep is used when awaiting for Go Wasm to initialize.
- * It uses the lowest possible sane delay time (via requestAnimationFrame).
- * However, if the window is not focused, requestAnimationFrame never returns.
- * A timeout will ensure to be called after 50 ms, regardless of whether or not
- * the tab is in focus.
- *
- * @returns {Promise} an always-resolving promise when a tick has been
- *     completed.
- */
-const sleep = () => new Promise(res => {
-  requestAnimationFrame(res);
-  setTimeout(res, 1000);
-});
+
 
 /**
  * The maximum amount of time that we would expect Wasm to take to initialize.
@@ -136,7 +138,7 @@ async function createWasm() {
     }
 
     while (bridge.__wasm_initialized__ !== true) {
-      await sleep();
+      await sleep(1000);
     }
 
     if (typeof bridge.sdk[key] !== 'function') {
