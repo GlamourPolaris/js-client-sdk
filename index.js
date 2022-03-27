@@ -35,14 +35,6 @@ var preferredBlobbers; // eslint-disable-line
 var tokenLock;
 let bls, goWasm;
 
-let lastServerTimeCheck = new Date(); //Date
-let localNetworkTimeDiff  = 0; //In Seconds
-
-// const StorageSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7";
-// const FaucetSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3";
-// const InterestPoolSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9";
-// const MinerSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d1";
-
 // const MultiSigSmartContractAddress = '27b5ef7120252b79f9dd9c05505dd28f328c80f6863ee446daede08a84d651a7';
 // const VestingSmartContractAddress = '2bba5b05949ea59c80aed3ac3474d7379d3be737e8eb5a968c52295e48333ead';
 // const ZRC20SmartContractAddress = '6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d5';
@@ -97,15 +89,7 @@ const Endpoints = {
     COMMIT_META_TXN_ENDPOINT: "/v1/file/commitmetatxn/",
 
     //PROXY
-    PROXY_SERVER_UPLOAD_ENDPOINT: "/upload",
     PROXY_SERVER_DOWNLOAD_ENDPOINT: "/download",
-    PROXY_SERVER_SHARE_ENDPOINT: "/share",
-    PROXY_SERVER_RENAME_ENDPOINT: "/rename",
-    PROXY_SERVER_COPY_ENDPOINT: "/copy",
-    PROXY_SERVER_DELETE_ENDPOINT: "/delete",
-    PROXY_SERVER_MOVE_ENDPOINT: "/move",
-    PROXY_SERVER_ENCRYPT_PUBLIC_KEY_ENDPOINT: "/publicEncryptionKey",
-    PROXY_SERVER_CURRENT_TIME: "/server_time",
 
     // ZEROBOX URLs
     ZEROBOX_SERVER_GET_MNEMONIC_ENDPOINT: '/v2/getmnemonic',
@@ -213,8 +197,6 @@ module.exports = {
         tokenLock = config.tokenLock;
         maxChallengeCompletionTime = parseInt(config.maxChallengeCompletionTime * 1000000000)
         version = "0.8.0";
-
-        updateLocalNetworkTimeDiff();
     },
 
     setWallet: async function (clientID, sk, pk) {
@@ -1193,7 +1175,7 @@ function createWalletKeys(mnemonic) {
 
 async function submitTransaction(ae, toClientId, val, note, transaction_type) {
     const hashPayload = sha3.sha3_256(note);
-    const ts = getTimestamp();
+    const ts = Math.floor(new Date().getTime() / 1000);
 
     const hashdata = ts + ":" + ae.id + ":" + toClientId + ":" + val + ":" + hashPayload;
 
@@ -1226,27 +1208,4 @@ async function submitTransaction(ae, toClientId, val, note, transaction_type) {
                 reject(error);
             })
     });
-}
-
-async function updateLocalNetworkTimeDiff() {
-    try {
-        const url = proxyServerUrl + Endpoints.PROXY_SERVER_CURRENT_TIME;
-
-        const { data } = await utils.plainGet(url);
-
-        localNetworkTimeDiff = data.time - (new Date().getTime() / 1000);
-        lastServerTimeCheck = new Date();
-    } catch (err) {
-        console.error('Error while fetching current time, using previously stored server time', err.message);
-    }
-}
-
-function getTimestamp() {
-    const minutesSinceLastCheck = Math.ceil(new Date() - lastServerTimeCheck)/(1000*60);
-
-    if (minutesSinceLastCheck >= 5)
-      updateLocalNetworkTimeDiff();
-
-    const timestamp = Math.floor(new Date().getTime() / 1000 + localNetworkTimeDiff);
-    return timestamp;
 }
