@@ -573,16 +573,20 @@ module.exports = {
         }
 
         const response = {};
-        for (let index in miners) {
+
+        for (let index in sharders) {
             let isAllSuccess = true;
+
             for (let url in urls) {
-                await utils.getReq(miners[index] + urls[url], {})
+                await utils.getReq(sharders[index] + urls[url], {})
                     .then((res) => {
                         let activeUrls;
                         if (url != "blobbersList") {
                             let active = activeList[url];
+
                             activeUrls = res.data && res.data.Nodes && res.data.Nodes.filter((value) => {
                                 const url = value.simple_miner.host + ":" + value.simple_miner.port;
+
                                 let check = false;
                                 for (let val of active) {
                                     if (val.indexOf(url.slice(0, -6)) !== -1) {
@@ -608,6 +612,7 @@ module.exports = {
             if (isAllSuccess)
                 break;
         }
+
         return response
     },
 
