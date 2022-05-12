@@ -34,6 +34,7 @@ var readPrice, writePrice; // eslint-disable-line
 var preferredBlobbers; // eslint-disable-line
 var tokenLock;
 let bls, goWasm;
+let cachedNonce;
 
 // const MultiSigSmartContractAddress = '27b5ef7120252b79f9dd9c05505dd28f328c80f6863ee446daede08a84d651a7';
 // const VestingSmartContractAddress = '2bba5b05949ea59c80aed3ac3474d7379d3be737e8eb5a968c52295e48333ead';
@@ -42,6 +43,7 @@ const FaucetSmartContractAddress = '6dba10422e368813802877a85039d3985d96760ed844
 const StorageSmartContractAddress = '6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7';
 const MinerSmartContractAddress = '6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9';
 const InterestPoolSmartContractAddress = 'cf8d0df9bd8cc637a4ff4e792ffe3686da6220c45f0e1103baa609f3f1751ef4';
+const cachedNonceResetInterval = 5*60*1000       //5 Minutes into milli seconds
 
 const Endpoints = {
     REGISTER_CLIENT: 'v1/client/put',
@@ -273,25 +275,7 @@ module.exports = {
         });
     },
 
-    getBalance: (client_id) => {
-        return new Promise(function (resolve, reject) {
-            utils.getConsensusedInformationFromSharders(sharders, Endpoints.GET_BALANCE, { client_id: client_id })
-                .then((res) => {
-                    resolve(res);
-                })
-                .catch((error) => {
-                    if (error.error === "value not present") {
-                        resolve({
-                            balance: 0
-                        })
-                    }
-                    else {
-                        reject(error);
-                    }
-                })
-        });
-        // return getInformationFromRandomSharder(Endpoints.GET_BALANCE, { client_id: client_id });
-    },
+    getBalance: getBalance,
 
     getClient: (mnemonic) => {
         return new Promise(function (resolve, reject) {
@@ -427,11 +411,7 @@ module.exports = {
             date.setDate(date.getDate() + days);
             return date;
         }
-
         expiration_date = Math.floor(expiration_date.addDays(30).getTime() / 1000)
-
-        // console.log(expiration_date,"exp")
-
         const payload = {
             name: "new_allocation_request",
             input: {
@@ -447,8 +427,6 @@ module.exports = {
                 preferred_blobbers,
             },
         };
-        // console.log(payload,"create allocation payload")
-
 
         return this.executeSmartContract(
             ae,
@@ -517,7 +495,6 @@ module.exports = {
             Endpoints.SC_REST_READPOOL_STATS,
             { client_id: id }
         );
-        // console.log(readPoolInfoRes,"res read pol")
         return readPoolInfoRes;
     },
 
@@ -1178,12 +1155,42 @@ function createWalletKeys(mnemonic) {
 
 }
 
+async function getBalance(client_id) {
+     return new Promise(function (resolve, reject) {
+            utils.getConsensusedInformationFromSharders(sharders, Endpoints.GET_BALANCE, { client_id: client_id })
+                .then((res) => {
+                    resolve(res);
+                })
+                .catch((error) => {
+                    if (error.error === "value not present") {
+                        resolve({
+                            balance: 0
+                        })
+                    }
+                    else {
+                        reject(error);
+                    }
+                })
+        });
+}
+
 async function submitTransaction(ae, toClientId, val, note, transaction_type) {
     const hashPayload = sha3.sha3_256(note);
     const ts = Math.floor(new Date().getTime() / 1000);
 
-    const hashdata = ts + ":" + ae.id + ":" + toClientId + ":" + val + ":" + hashPayload;
+    if (cachedNonce === undefined) {
+        //initialize by 0 if there is no nonce from getBalance as well
+        try {
+            const { nonce } = await getBalance(ae.id)
+            cachedNonce = nonce ?? 0   
+        }
+        catch (err) {
+           cachedNonce = 0  
+        }
+    }
 
+    const nonceToUse = cachedNonce+1
+    const hashdata = ts + ":" + nonceToUse + ":" + ae.id + ":" + toClientId + ":" + val + ":" + hashPayload;
     const hash = sha3.sha3_256(hashdata);
     const bytehash = utils.hexStringToByte(hash);
     const sec = new bls.SecretKey();
@@ -1195,6 +1202,7 @@ async function submitTransaction(ae, toClientId, val, note, transaction_type) {
     data.transaction_value = val;
     data.transaction_data = note;
     data.transaction_type = transaction_type;
+    data.transaction_nonce = nonceToUse
     data.creation_date = ts;
     data.to_client_id = toClientId;
     data.hash = hash;
@@ -1207,6 +1215,8 @@ async function submitTransaction(ae, toClientId, val, note, transaction_type) {
     return new Promise(function (resolve, reject) {
         utils.doParallelPostReqToAllMiners(miners, Endpoints.PUT_TRANSACTION, data)
             .then((response) => {
+                cachedNonce +=1
+
                 resolve(new models.Transaction(response.entity));
             })
             .catch((error) => {
@@ -1214,3 +1224,7 @@ async function submitTransaction(ae, toClientId, val, note, transaction_type) {
             })
     });
 }
+
+setInterval(() => {
+    cachedNonce = undefined
+}, cachedNonceResetInterval)
