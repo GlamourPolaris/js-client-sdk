@@ -916,9 +916,9 @@ module.exports = {
 
 
     uploadObject: async function (file, allocation_id, path, encrypt = false, shouldCommitMeta = false) {
-       // Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, commit bool, attrWhoPaysForReads string, isLiveUpload, isSyncUpload bool, chunkSize int, isUpdate, isRepair bool) (*transaction.Transaction, error) {
+        // Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, commit bool, attrWhoPaysForReads string, isLiveUpload, isSyncUpload bool, isUpdate, isRepair bool) (*transaction.Transaction, error) {
         const fileBytes = await utils.readBytes(file);
-        const resp = await goWasm.sdk.upload(allocation_id, path, fileBytes, null, encrypt, shouldCommitMeta, "", false, false, 0, false, false);
+        const resp = await goWasm.sdk.upload(allocation_id, path, fileBytes, null, encrypt, shouldCommitMeta, "", false, false, false, false);
         return resp;
     },
 
