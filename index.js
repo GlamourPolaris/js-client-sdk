@@ -393,7 +393,7 @@ module.exports = {
         // return getInformationFromRandomSharder(Endpoints.GET_SCSTATE, { key: keyName+":"+keyvalue, sc_address: StorageSmartContractAddress  });
     },
 
-    allocateStorage: function allocateStorage(
+    allocateStorage: async function allocateStorage(
         ae,
         data_shards = dataShards,
         parity_shards = parityShards,
@@ -412,6 +412,12 @@ module.exports = {
             return date;
         }
         expiration_date = Math.floor(expiration_date.addDays(30).getTime() / 1000)
+
+        const blobbers = await goWasm.sdk.getAllocationBlobbers(preferred_blobbers,
+            data_shards,parity_shards,size, expiration_date,
+            readPrice.min, readPrice.max, 
+            writePrice.min, writePrice.max);
+
         const payload = {
             name: "new_allocation_request",
             input: {
@@ -424,7 +430,7 @@ module.exports = {
                 read_price_range: readPrice,
                 write_price_range: writePrice,
                 max_challenge_completion_time,
-                preferred_blobbers,
+                blobbers,
             },
         };
 
